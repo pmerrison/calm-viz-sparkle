@@ -316,11 +316,11 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="h-screen bg-background flex flex-col">
       <Header />
       
-      <main className="flex-1 flex flex-col overflow-hidden">
-        <div className="flex-1 w-full p-6 overflow-hidden">
+      <main className="flex-1 flex flex-col overflow-hidden min-h-0">
+        <div className="flex-1 w-full p-6 overflow-hidden min-h-0">
           <ResizablePanelGroup direction="horizontal" className="h-full">
             <ResizablePanel defaultSize={50} minSize={30}>
               <div className="h-full pr-3">
