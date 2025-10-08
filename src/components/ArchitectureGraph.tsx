@@ -231,61 +231,75 @@ export const ArchitectureGraph = ({ jsonData, onNodeClick }: ArchitectureGraphPr
         }
       });
 
-      // Update nodes with parent relationships
+      // Separate nodes into groups
+      const nodesInSystems: Node[] = [];
+      const independentNodes: Node[] = [];
+      
       newNodes.forEach((node) => {
+        let isInSystem = false;
         for (const [systemId, childIds] of Object.entries(deploymentMap)) {
           if (childIds.includes(node.id)) {
-            node.parentId = systemId;
-            node.expandParent = true;
-            // Set relative position within parent
-            node.position = { x: 50, y: 50 };
+            isInSystem = true;
+            nodesInSystems.push({
+              ...node,
+              parentId: systemId,
+              expandParent: true,
+              position: { x: 0, y: 0 }, // Will be set after layout
+            });
             break;
           }
         }
+        if (!isInSystem) {
+          independentNodes.push(node);
+        }
       });
 
-      // Apply layout only to non-system nodes first
-      const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(newNodes, newEdges);
-
-      // Calculate bounds for system nodes based on their children
+      // Step 1: Layout children within each system
       systemNodes.forEach((systemNode) => {
-        const childNodes = layoutedNodes.filter(n => n.parentId === systemNode.id);
+        const childNodes = nodesInSystems.filter(n => n.parentId === systemNode.id);
         
         if (childNodes.length > 0) {
-          // Find bounding box of children
-          let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+          // Get edges within this system
+          const systemEdges = newEdges.filter(e => 
+            childNodes.some(n => n.id === e.source) && 
+            childNodes.some(n => n.id === e.target)
+          );
           
-          childNodes.forEach(child => {
-            const nodeWidth = 250;
-            const nodeHeight = 100;
+          // Layout children with compact settings
+          const { nodes: layoutedChildren } = getLayoutedElements(childNodes, systemEdges);
+          
+          // Calculate bounding box
+          let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+          const nodeWidth = 250;
+          const nodeHeight = 100;
+          
+          layoutedChildren.forEach(child => {
             minX = Math.min(minX, child.position.x);
             minY = Math.min(minY, child.position.y);
             maxX = Math.max(maxX, child.position.x + nodeWidth);
             maxY = Math.max(maxY, child.position.y + nodeHeight);
           });
           
-          // Add padding around children
+          // Set system dimensions with padding
           const padding = 80;
-          systemNode.position = {
-            x: minX - padding,
-            y: minY - padding
-          };
           systemNode.style = {
             ...systemNode.style,
             width: maxX - minX + padding * 2,
             height: maxY - minY + padding * 2,
           };
           
-          // Adjust child positions to be relative to parent
-          childNodes.forEach(child => {
-            child.position = {
-              x: child.position.x - systemNode.position.x,
-              y: child.position.y - systemNode.position.y
-            };
+          // Update child positions to be relative to system origin with padding
+          layoutedChildren.forEach((child, idx) => {
+            const originalChild = nodesInSystems.find(n => n.id === child.id);
+            if (originalChild) {
+              originalChild.position = {
+                x: child.position.x - minX + padding,
+                y: child.position.y - minY + padding
+              };
+            }
           });
         } else {
-          // Empty system, give it minimum dimensions
-          systemNode.position = { x: 0, y: 0 };
+          // Empty system
           systemNode.style = {
             ...systemNode.style,
             width: 300,
@@ -294,10 +308,74 @@ export const ArchitectureGraph = ({ jsonData, onNodeClick }: ArchitectureGraphPr
         }
       });
 
-      // Combine all nodes
-      const allNodes = [...systemNodes, ...layoutedNodes];
+      // Step 2: Create top-level layout
+      // For top-level layout, we need to treat systems as single nodes with their calculated dimensions
+      const systemNodesForLayout = systemNodes.map(s => ({
+        ...s,
+        // Don't include children in top-level layout
+        parentId: undefined,
+      }));
+      
+      // Get edges that connect independent nodes or cross system boundaries
+      const topLevelEdges = newEdges.filter(e => {
+        const sourceInSystem = nodesInSystems.some(n => n.id === e.source);
+        const targetInSystem = nodesInSystems.some(n => n.id === e.target);
+        // Include edge if at least one end is independent or they're in different systems
+        return !sourceInSystem || !targetInSystem;
+      });
+      
+      // Combine independent nodes and system nodes for top-level layout
+      const topLevelNodes = [...independentNodes, ...systemNodesForLayout];
+      
+      // Layout with increased spacing to prevent overlap
+      const dagreGraph = new dagre.graphlib.Graph();
+      dagreGraph.setDefaultEdgeLabel(() => ({}));
+      dagreGraph.setGraph({ 
+        rankdir: 'LR',
+        ranksep: 250,
+        nodesep: 150,
+        edgesep: 50,
+        marginx: 100,
+        marginy: 100
+      });
+      
+      topLevelNodes.forEach((node) => {
+        const width = node.style?.width || 250;
+        const height = node.style?.height || 100;
+        dagreGraph.setNode(node.id, { width, height });
+      });
+      
+      topLevelEdges.forEach((edge) => {
+        dagreGraph.setEdge(edge.source, edge.target);
+      });
+      
+      dagre.layout(dagreGraph);
+      
+      // Apply top-level positions
+      independentNodes.forEach(node => {
+        const nodeWithPosition = dagreGraph.node(node.id);
+        const width = 250;
+        const height = 100;
+        node.position = {
+          x: nodeWithPosition.x - width / 2,
+          y: nodeWithPosition.y - height / 2,
+        };
+      });
+      
+      systemNodes.forEach(systemNode => {
+        const nodeWithPosition = dagreGraph.node(systemNode.id);
+        const width = (systemNode.style?.width as number) || 300;
+        const height = (systemNode.style?.height as number) || 200;
+        systemNode.position = {
+          x: nodeWithPosition.x - width / 2,
+          y: nodeWithPosition.y - height / 2,
+        };
+      });
 
-      return { nodes: allNodes, edges: layoutedEdges };
+      // Combine all nodes
+      const allNodes = [...systemNodes, ...independentNodes, ...nodesInSystems];
+
+      return { nodes: allNodes, edges: newEdges };
     } catch (error) {
       console.error("Error parsing CALM data:", error);
       return { nodes: [], edges: [] };
