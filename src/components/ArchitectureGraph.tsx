@@ -16,6 +16,7 @@ import { Card } from "./ui/card";
 import { Network, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "./ui/alert";
 import { CustomEdge } from "./CustomEdge";
+import { CustomNode } from "./CustomNode";
 
 interface ArchitectureGraphProps {
   jsonData: any;
@@ -67,6 +68,7 @@ export const ArchitectureGraph = ({ jsonData, onNodeClick }: ArchitectureGraphPr
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 
   const edgeTypes = useMemo(() => ({ custom: CustomEdge }), []);
+  const nodeTypes = useMemo(() => ({ custom: CustomNode }), []);
 
   const parseCALMData = useCallback((data: any) => {
     if (!data) return { nodes: [], edges: [] };
@@ -85,21 +87,11 @@ export const ArchitectureGraph = ({ jsonData, onNodeClick }: ArchitectureGraphPr
           if (id) {
             newNodes.push({
               id,
-              type: "default",
+              type: "custom",
               position: { x: 0, y: 0 }, // Will be set by layout algorithm
               data: { 
                 label: node.name || id,
                 ...node 
-              },
-              style: {
-                background: "hsl(var(--card))",
-                border: "2px solid hsl(var(--primary))",
-                borderRadius: "12px",
-                padding: "16px",
-                width: 220,
-                color: "hsl(var(--foreground))",
-                fontSize: "14px",
-                fontWeight: "500",
               },
               sourcePosition: Position.Right,
               targetPosition: Position.Left,
@@ -111,21 +103,11 @@ export const ArchitectureGraph = ({ jsonData, onNodeClick }: ArchitectureGraphPr
         Object.entries(nodesData).forEach(([id, node]: [string, any]) => {
           newNodes.push({
             id,
-            type: "default",
+            type: "custom",
             position: { x: 0, y: 0 },
             data: { 
               label: node.name || node.unique_id || id,
               ...node 
-            },
-            style: {
-              background: "hsl(var(--card))",
-              border: "2px solid hsl(var(--primary))",
-              borderRadius: "12px",
-              padding: "16px",
-              width: 220,
-              color: "hsl(var(--foreground))",
-              fontSize: "14px",
-              fontWeight: "500",
             },
             sourcePosition: Position.Right,
             targetPosition: Position.Left,
@@ -226,6 +208,7 @@ export const ArchitectureGraph = ({ jsonData, onNodeClick }: ArchitectureGraphPr
           <ReactFlow
             nodes={nodes}
             edges={edges}
+            nodeTypes={nodeTypes}
             edgeTypes={edgeTypes}
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
