@@ -174,7 +174,7 @@ export const ArchitectureGraph = ({ jsonData, onNodeClick }: ArchitectureGraphPr
           const sourceId = connects.source?.node;
           const targetId = connects.destination?.node;
           const label = rel.description || rel.protocol || "";
-          
+
           if (sourceId && targetId) {
             newEdges.push({
               id: `edge-${index}`,
@@ -182,9 +182,9 @@ export const ArchitectureGraph = ({ jsonData, onNodeClick }: ArchitectureGraphPr
               target: targetId,
               type: "custom",
               animated: true,
-              style: { 
-                stroke: "hsl(var(--accent))", 
-                strokeWidth: 2.5 
+              style: {
+                stroke: "hsl(var(--accent))",
+                strokeWidth: 2.5
               },
               markerEnd: {
                 type: MarkerType.ArrowClosed,
@@ -194,7 +194,8 @@ export const ArchitectureGraph = ({ jsonData, onNodeClick }: ArchitectureGraphPr
               },
               data: {
                 description: label,
-                protocol: rel.protocol || ""
+                protocol: rel.protocol || "",
+                metadata: rel.metadata || {}
               }
             });
           }
@@ -204,7 +205,7 @@ export const ArchitectureGraph = ({ jsonData, onNodeClick }: ArchitectureGraphPr
           const sourceId = rel.source || rel.from || rel.source_id;
           const targetId = rel.target || rel.to || rel.target_id;
           const label = rel.relationship_type || rel.type || rel.label || "";
-          
+
           if (sourceId && targetId) {
             newEdges.push({
               id: `edge-${index}`,
@@ -212,9 +213,9 @@ export const ArchitectureGraph = ({ jsonData, onNodeClick }: ArchitectureGraphPr
               target: targetId,
               type: "custom",
               animated: true,
-              style: { 
-                stroke: "hsl(var(--accent))", 
-                strokeWidth: 2.5 
+              style: {
+                stroke: "hsl(var(--accent))",
+                strokeWidth: 2.5
               },
               markerEnd: {
                 type: MarkerType.ArrowClosed,
@@ -224,7 +225,8 @@ export const ArchitectureGraph = ({ jsonData, onNodeClick }: ArchitectureGraphPr
               },
               data: {
                 description: label,
-                protocol: rel.protocol || ""
+                protocol: rel.protocol || "",
+                metadata: rel.metadata || {}
               }
             });
           }
