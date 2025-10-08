@@ -321,7 +321,7 @@ const Index = () => {
       
       <main className="flex-1 flex flex-col overflow-hidden">
         <div className="flex-1 w-full p-6 overflow-hidden">
-          <ResizablePanelGroup direction="horizontal" className="gap-6">
+          <ResizablePanelGroup direction="horizontal" className="gap-6 h-full">
             <ResizablePanel defaultSize={50} minSize={30}>
               <div className="h-full">
                 <JsonEditor 
