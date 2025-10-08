@@ -43,32 +43,40 @@ export const CustomEdge = ({
               position: 'absolute',
               transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
               pointerEvents: 'all',
-              zIndex: 1,
+              zIndex: 1000,
             }}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
             className="nodrag nopan"
           >
-            <div className="relative">
-              <div className="flex items-center justify-center w-6 h-6 rounded-full bg-accent/20 border-2 border-accent hover:bg-accent/40 transition-all cursor-help">
-                <Info className="w-3 h-3 text-accent" />
-              </div>
-              
-              {isHovered && (
-                <div className="absolute left-1/2 -translate-x-1/2 top-8 z-[9999] animate-fade-in">
-                  <div className="bg-card border-2 border-border rounded-lg shadow-lg p-3 max-w-xs">
-                    <p className="text-xs font-medium text-foreground mb-1">{description}</p>
-                    {protocol && (
-                      <p className="text-xs text-muted-foreground">
-                        Protocol: <span className="font-mono text-accent">{protocol}</span>
-                      </p>
-                    )}
-                  </div>
-                  <div className="absolute left-1/2 -translate-x-1/2 -top-1 w-2 h-2 bg-card border-l-2 border-t-2 border-border rotate-45" />
-                </div>
-              )}
+            <div className="flex items-center justify-center w-6 h-6 rounded-full bg-accent/20 border-2 border-accent hover:bg-accent/40 transition-all cursor-help">
+              <Info className="w-3 h-3 text-accent" />
             </div>
           </div>
+
+          {isHovered && (
+            <div
+              style={{
+                position: 'fixed',
+                left: labelX,
+                top: labelY + 40,
+                transform: 'translateX(-50%)',
+                pointerEvents: 'none',
+                zIndex: 10000,
+              }}
+              className="animate-fade-in"
+            >
+              <div className="bg-card border-2 border-border rounded-lg shadow-lg p-3 max-w-xs">
+                <p className="text-xs font-medium text-foreground mb-1">{description}</p>
+                {protocol && (
+                  <p className="text-xs text-muted-foreground">
+                    Protocol: <span className="font-mono text-accent">{protocol}</span>
+                  </p>
+                )}
+              </div>
+              <div className="absolute left-1/2 -translate-x-1/2 -top-1 w-2 h-2 bg-card border-l-2 border-t-2 border-border rotate-45" />
+            </div>
+          )}
         </EdgeLabelRenderer>
       )}
     </>
