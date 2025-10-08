@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect } from "react";
 import ReactFlow, {
   Node,
   Edge,
@@ -10,6 +10,7 @@ import ReactFlow, {
   MarkerType,
   Position,
 } from "reactflow";
+import dagre from "dagre";
 import "reactflow/dist/style.css";
 import { Card } from "./ui/card";
 import { Network, AlertCircle } from "lucide-react";
@@ -19,6 +20,46 @@ interface ArchitectureGraphProps {
   jsonData: any;
   onNodeClick: (node: any) => void;
 }
+
+const getLayoutedElements = (nodes: Node[], edges: Edge[]) => {
+  const dagreGraph = new dagre.graphlib.Graph();
+  dagreGraph.setDefaultEdgeLabel(() => ({}));
+  
+  const nodeWidth = 250;
+  const nodeHeight = 100;
+  
+  dagreGraph.setGraph({ 
+    rankdir: 'LR',
+    ranksep: 150,
+    nodesep: 100,
+    edgesep: 50,
+    marginx: 50,
+    marginy: 50
+  });
+
+  nodes.forEach((node) => {
+    dagreGraph.setNode(node.id, { width: nodeWidth, height: nodeHeight });
+  });
+
+  edges.forEach((edge) => {
+    dagreGraph.setEdge(edge.source, edge.target);
+  });
+
+  dagre.layout(dagreGraph);
+
+  const layoutedNodes = nodes.map((node) => {
+    const nodeWithPosition = dagreGraph.node(node.id);
+    return {
+      ...node,
+      position: {
+        x: nodeWithPosition.x - nodeWidth / 2,
+        y: nodeWithPosition.y - nodeHeight / 2,
+      },
+    };
+  });
+
+  return { nodes: layoutedNodes, edges };
+};
 
 export const ArchitectureGraph = ({ jsonData, onNodeClick }: ArchitectureGraphProps) => {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
@@ -32,53 +73,72 @@ export const ArchitectureGraph = ({ jsonData, onNodeClick }: ArchitectureGraphPr
     
     try {
       // Parse nodes from CALM structure
-      if (data.nodes) {
-        Object.entries(data.nodes).forEach(([id, node]: [string, any], index) => {
-          const x = (index % 4) * 300 + 100;
-          const y = Math.floor(index / 4) * 200 + 100;
-          
-          newNodes.push({
-            id,
-            type: "default",
-            position: { x, y },
-            data: { 
-              label: node.name || node.unique_id || id,
-              ...node 
-            },
-            style: {
-              background: "hsl(var(--card))",
-              border: "2px solid hsl(var(--primary))",
-              borderRadius: "12px",
-              padding: "16px",
-              width: 200,
-              color: "hsl(var(--foreground))",
-            },
-            sourcePosition: Position.Right,
-            targetPosition: Position.Left,
-          });
+      const nodesData = data.nodes || {};
+      Object.entries(nodesData).forEach(([id, node]: [string, any]) => {
+        newNodes.push({
+          id,
+          type: "default",
+          position: { x: 0, y: 0 }, // Will be set by layout algorithm
+          data: { 
+            label: node.name || node.unique_id || id,
+            ...node 
+          },
+          style: {
+            background: "hsl(var(--card))",
+            border: "2px solid hsl(var(--primary))",
+            borderRadius: "12px",
+            padding: "16px",
+            width: 220,
+            color: "hsl(var(--foreground))",
+            fontSize: "14px",
+            fontWeight: "500",
+          },
+          sourcePosition: Position.Right,
+          targetPosition: Position.Left,
         });
-      }
+      });
 
-      // Parse relationships/edges
-      if (data.relationships) {
-        data.relationships.forEach((rel: any, index: number) => {
+      // Parse relationships/edges - handle multiple formats
+      const relationships = data.relationships || [];
+      relationships.forEach((rel: any, index: number) => {
+        const sourceId = rel.source || rel.from || rel.source_id;
+        const targetId = rel.target || rel.to || rel.target_id;
+        
+        if (sourceId && targetId) {
           newEdges.push({
             id: `edge-${index}`,
-            source: rel.source || rel.from,
-            target: rel.target || rel.to,
+            source: sourceId,
+            target: targetId,
             type: "smoothstep",
             animated: true,
-            style: { stroke: "hsl(var(--accent))", strokeWidth: 2 },
+            style: { 
+              stroke: "hsl(var(--accent))", 
+              strokeWidth: 2.5 
+            },
             markerEnd: {
               type: MarkerType.ArrowClosed,
               color: "hsl(var(--accent))",
+              width: 25,
+              height: 25,
             },
-            label: rel.relationship_type || rel.type || "",
+            label: rel.relationship_type || rel.type || rel.label || "",
+            labelStyle: {
+              fill: "hsl(var(--foreground))",
+              fontSize: "12px",
+              fontWeight: "500",
+            },
+            labelBgStyle: {
+              fill: "hsl(var(--background))",
+              fillOpacity: 0.9,
+            },
+            labelBgPadding: [8, 4],
+            labelBgBorderRadius: 4,
           });
-        });
-      }
+        }
+      });
 
-      return { nodes: newNodes, edges: newEdges };
+      // Apply intelligent layout
+      return getLayoutedElements(newNodes, newEdges);
     } catch (error) {
       console.error("Error parsing CALM data:", error);
       return { nodes: [], edges: [] };
@@ -105,6 +165,9 @@ export const ArchitectureGraph = ({ jsonData, onNodeClick }: ArchitectureGraphPr
       <div className="flex items-center gap-2 p-4 border-b border-border">
         <Network className="w-4 h-4 text-accent" />
         <h2 className="font-semibold">Architecture Visualization</h2>
+        <span className="text-xs text-muted-foreground ml-auto">
+          {nodes.length} nodes, {edges.length} connections
+        </span>
       </div>
 
       <div className="flex-1 relative">
@@ -125,6 +188,7 @@ export const ArchitectureGraph = ({ jsonData, onNodeClick }: ArchitectureGraphPr
             onEdgesChange={onEdgesChange}
             onNodeClick={handleNodeClick}
             fitView
+            fitViewOptions={{ padding: 0.2 }}
             attributionPosition="bottom-left"
           >
             <Background color="hsl(var(--muted-foreground))" gap={16} />
