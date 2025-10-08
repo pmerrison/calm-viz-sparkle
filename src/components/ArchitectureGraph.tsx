@@ -72,37 +72,84 @@ export const ArchitectureGraph = ({ jsonData, onNodeClick }: ArchitectureGraphPr
     const newEdges: Edge[] = [];
     
     try {
-      // Parse nodes from CALM structure
-      const nodesData = data.nodes || {};
-      Object.entries(nodesData).forEach(([id, node]: [string, any]) => {
-        newNodes.push({
-          id,
-          type: "default",
-          position: { x: 0, y: 0 }, // Will be set by layout algorithm
-          data: { 
-            label: node.name || node.unique_id || id,
-            ...node 
-          },
-          style: {
-            background: "hsl(var(--card))",
-            border: "2px solid hsl(var(--primary))",
-            borderRadius: "12px",
-            padding: "16px",
-            width: 220,
-            color: "hsl(var(--foreground))",
-            fontSize: "14px",
-            fontWeight: "500",
-          },
-          sourcePosition: Position.Right,
-          targetPosition: Position.Left,
+      // Parse nodes from CALM structure - handle both array and object formats
+      const nodesData = data.nodes || [];
+      
+      if (Array.isArray(nodesData)) {
+        // Handle FINOS CALM array format
+        nodesData.forEach((node: any) => {
+          const id = node["unique-id"] || node.unique_id || node.id;
+          if (id) {
+            newNodes.push({
+              id,
+              type: "default",
+              position: { x: 0, y: 0 }, // Will be set by layout algorithm
+              data: { 
+                label: node.name || id,
+                ...node 
+              },
+              style: {
+                background: "hsl(var(--card))",
+                border: "2px solid hsl(var(--primary))",
+                borderRadius: "12px",
+                padding: "16px",
+                width: 220,
+                color: "hsl(var(--foreground))",
+                fontSize: "14px",
+                fontWeight: "500",
+              },
+              sourcePosition: Position.Right,
+              targetPosition: Position.Left,
+            });
+          }
         });
-      });
+      } else {
+        // Handle object format
+        Object.entries(nodesData).forEach(([id, node]: [string, any]) => {
+          newNodes.push({
+            id,
+            type: "default",
+            position: { x: 0, y: 0 },
+            data: { 
+              label: node.name || node.unique_id || id,
+              ...node 
+            },
+            style: {
+              background: "hsl(var(--card))",
+              border: "2px solid hsl(var(--primary))",
+              borderRadius: "12px",
+              padding: "16px",
+              width: 220,
+              color: "hsl(var(--foreground))",
+              fontSize: "14px",
+              fontWeight: "500",
+            },
+            sourcePosition: Position.Right,
+            targetPosition: Position.Left,
+          });
+        });
+      }
 
-      // Parse relationships/edges - handle multiple formats
+      // Parse relationships/edges - handle FINOS CALM nested format
       const relationships = data.relationships || [];
       relationships.forEach((rel: any, index: number) => {
-        const sourceId = rel.source || rel.from || rel.source_id;
-        const targetId = rel.target || rel.to || rel.target_id;
+        let sourceId = null;
+        let targetId = null;
+        let label = "";
+        
+        // Handle FINOS CALM nested structure
+        if (rel["relationship-type"]?.connects) {
+          const connects = rel["relationship-type"].connects;
+          sourceId = connects.source?.node;
+          targetId = connects.destination?.node;
+          label = rel.description || rel.protocol || "";
+        } 
+        // Fallback to simple formats
+        else {
+          sourceId = rel.source || rel.from || rel.source_id;
+          targetId = rel.target || rel.to || rel.target_id;
+          label = rel.relationship_type || rel.type || rel.label || "";
+        }
         
         if (sourceId && targetId) {
           newEdges.push({
@@ -121,7 +168,7 @@ export const ArchitectureGraph = ({ jsonData, onNodeClick }: ArchitectureGraphPr
               width: 25,
               height: 25,
             },
-            label: rel.relationship_type || rel.type || rel.label || "",
+            label,
             labelStyle: {
               fill: "hsl(var(--foreground))",
               fontSize: "12px",
