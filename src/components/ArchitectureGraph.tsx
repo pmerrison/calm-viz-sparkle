@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import ReactFlow, {
   Node,
   Edge,
@@ -15,6 +15,7 @@ import "reactflow/dist/style.css";
 import { Card } from "./ui/card";
 import { Network, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "./ui/alert";
+import { CustomEdge } from "./CustomEdge";
 
 interface ArchitectureGraphProps {
   jsonData: any;
@@ -64,6 +65,8 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[]) => {
 export const ArchitectureGraph = ({ jsonData, onNodeClick }: ArchitectureGraphProps) => {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+
+  const edgeTypes = useMemo(() => ({ custom: CustomEdge }), []);
 
   const parseCALMData = useCallback((data: any) => {
     if (!data) return { nodes: [], edges: [] };
@@ -156,7 +159,7 @@ export const ArchitectureGraph = ({ jsonData, onNodeClick }: ArchitectureGraphPr
             id: `edge-${index}`,
             source: sourceId,
             target: targetId,
-            type: "smoothstep",
+            type: "custom",
             animated: true,
             style: { 
               stroke: "hsl(var(--accent))", 
@@ -168,18 +171,10 @@ export const ArchitectureGraph = ({ jsonData, onNodeClick }: ArchitectureGraphPr
               width: 25,
               height: 25,
             },
-            label,
-            labelStyle: {
-              fill: "hsl(var(--foreground))",
-              fontSize: "12px",
-              fontWeight: "500",
-            },
-            labelBgStyle: {
-              fill: "hsl(var(--background))",
-              fillOpacity: 0.9,
-            },
-            labelBgPadding: [8, 4],
-            labelBgBorderRadius: 4,
+            data: {
+              description: label,
+              protocol: rel.protocol || ""
+            }
           });
         }
       });
@@ -231,6 +226,7 @@ export const ArchitectureGraph = ({ jsonData, onNodeClick }: ArchitectureGraphPr
           <ReactFlow
             nodes={nodes}
             edges={edges}
+            edgeTypes={edgeTypes}
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onNodeClick={handleNodeClick}
