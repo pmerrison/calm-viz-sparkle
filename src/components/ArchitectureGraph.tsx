@@ -17,6 +17,7 @@ import { Network, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "./ui/alert";
 import { CustomEdge } from "./CustomEdge";
 import { CustomNode } from "./CustomNode";
+import { SystemGroupNode } from "./SystemGroupNode";
 
 interface ArchitectureGraphProps {
   jsonData: any;
@@ -68,13 +69,15 @@ export const ArchitectureGraph = ({ jsonData, onNodeClick }: ArchitectureGraphPr
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 
   const edgeTypes = useMemo(() => ({ custom: CustomEdge }), []);
-  const nodeTypes = useMemo(() => ({ custom: CustomNode }), []);
+  const nodeTypes = useMemo(() => ({ custom: CustomNode, group: SystemGroupNode }), []);
 
   const parseCALMData = useCallback((data: any) => {
     if (!data) return { nodes: [], edges: [] };
 
     const newNodes: Node[] = [];
     const newEdges: Edge[] = [];
+    const systemNodes: Node[] = [];
+    const deploymentMap: Record<string, string[]> = {}; // systemId -> [childNodeIds]
     
     try {
       // Parse nodes from CALM structure - handle both array and object formats
@@ -84,13 +87,65 @@ export const ArchitectureGraph = ({ jsonData, onNodeClick }: ArchitectureGraphPr
         // Handle FINOS CALM array format
         nodesData.forEach((node: any) => {
           const id = node["unique-id"] || node.unique_id || node.id;
+          const nodeType = node["node-type"] || node.node_type || node.type;
+          
           if (id) {
+            // Separate system nodes from regular nodes
+            if (nodeType === "system") {
+              systemNodes.push({
+                id,
+                type: "group",
+                position: { x: 0, y: 0 },
+                style: {
+                  zIndex: -1,
+                },
+                data: { 
+                  label: node.name || id,
+                  nodeType: "system",
+                  ...node 
+                },
+              });
+            } else {
+              newNodes.push({
+                id,
+                type: "custom",
+                position: { x: 0, y: 0 },
+                data: { 
+                  label: node.name || id,
+                  ...node 
+                },
+                sourcePosition: Position.Right,
+                targetPosition: Position.Left,
+              });
+            }
+          }
+        });
+      } else {
+        // Handle object format
+        Object.entries(nodesData).forEach(([id, node]: [string, any]) => {
+          const nodeType = (node as any)["node-type"] || (node as any).node_type || (node as any).type;
+          
+          if (nodeType === "system") {
+            systemNodes.push({
+              id,
+              type: "group",
+              position: { x: 0, y: 0 },
+              style: {
+                zIndex: -1,
+              },
+              data: { 
+                label: (node as any).name || (node as any).unique_id || id,
+                nodeType: "system",
+                ...node 
+              },
+            });
+          } else {
             newNodes.push({
               id,
               type: "custom",
-              position: { x: 0, y: 0 }, // Will be set by layout algorithm
+              position: { x: 0, y: 0 },
               data: { 
-                label: node.name || id,
+                label: (node as any).name || (node as any).unique_id || id,
                 ...node 
               },
               sourcePosition: Position.Right,
@@ -98,71 +153,151 @@ export const ArchitectureGraph = ({ jsonData, onNodeClick }: ArchitectureGraphPr
             });
           }
         });
-      } else {
-        // Handle object format
-        Object.entries(nodesData).forEach(([id, node]: [string, any]) => {
-          newNodes.push({
-            id,
-            type: "custom",
-            position: { x: 0, y: 0 },
-            data: { 
-              label: node.name || node.unique_id || id,
-              ...node 
-            },
-            sourcePosition: Position.Right,
-            targetPosition: Position.Left,
-          });
-        });
       }
 
       // Parse relationships/edges - handle FINOS CALM nested format
       const relationships = data.relationships || [];
       relationships.forEach((rel: any, index: number) => {
-        let sourceId = null;
-        let targetId = null;
-        let label = "";
-        
-        // Handle FINOS CALM nested structure
-        if (rel["relationship-type"]?.connects) {
+        // Check for deployed-in relationship
+        if (rel["relationship-type"]?.["deployed-in"]) {
+          const deployedIn = rel["relationship-type"]["deployed-in"];
+          const containerId = deployedIn.container;
+          const childNodeIds = deployedIn.nodes || [];
+          
+          if (containerId && childNodeIds.length > 0) {
+            deploymentMap[containerId] = childNodeIds;
+          }
+        }
+        // Handle regular connections
+        else if (rel["relationship-type"]?.connects) {
           const connects = rel["relationship-type"].connects;
-          sourceId = connects.source?.node;
-          targetId = connects.destination?.node;
-          label = rel.description || rel.protocol || "";
-        } 
+          const sourceId = connects.source?.node;
+          const targetId = connects.destination?.node;
+          const label = rel.description || rel.protocol || "";
+          
+          if (sourceId && targetId) {
+            newEdges.push({
+              id: `edge-${index}`,
+              source: sourceId,
+              target: targetId,
+              type: "custom",
+              animated: true,
+              style: { 
+                stroke: "hsl(var(--accent))", 
+                strokeWidth: 2.5 
+              },
+              markerEnd: {
+                type: MarkerType.ArrowClosed,
+                color: "hsl(var(--accent))",
+                width: 25,
+                height: 25,
+              },
+              data: {
+                description: label,
+                protocol: rel.protocol || ""
+              }
+            });
+          }
+        }
         // Fallback to simple formats
         else {
-          sourceId = rel.source || rel.from || rel.source_id;
-          targetId = rel.target || rel.to || rel.target_id;
-          label = rel.relationship_type || rel.type || rel.label || "";
-        }
-        
-        if (sourceId && targetId) {
-          newEdges.push({
-            id: `edge-${index}`,
-            source: sourceId,
-            target: targetId,
-            type: "custom",
-            animated: true,
-            style: { 
-              stroke: "hsl(var(--accent))", 
-              strokeWidth: 2.5 
-            },
-            markerEnd: {
-              type: MarkerType.ArrowClosed,
-              color: "hsl(var(--accent))",
-              width: 25,
-              height: 25,
-            },
-            data: {
-              description: label,
-              protocol: rel.protocol || ""
-            }
-          });
+          const sourceId = rel.source || rel.from || rel.source_id;
+          const targetId = rel.target || rel.to || rel.target_id;
+          const label = rel.relationship_type || rel.type || rel.label || "";
+          
+          if (sourceId && targetId) {
+            newEdges.push({
+              id: `edge-${index}`,
+              source: sourceId,
+              target: targetId,
+              type: "custom",
+              animated: true,
+              style: { 
+                stroke: "hsl(var(--accent))", 
+                strokeWidth: 2.5 
+              },
+              markerEnd: {
+                type: MarkerType.ArrowClosed,
+                color: "hsl(var(--accent))",
+                width: 25,
+                height: 25,
+              },
+              data: {
+                description: label,
+                protocol: rel.protocol || ""
+              }
+            });
+          }
         }
       });
 
-      // Apply intelligent layout
-      return getLayoutedElements(newNodes, newEdges);
+      // Update nodes with parent relationships
+      newNodes.forEach((node) => {
+        for (const [systemId, childIds] of Object.entries(deploymentMap)) {
+          if (childIds.includes(node.id)) {
+            node.parentId = systemId;
+            node.expandParent = true;
+            // Set relative position within parent
+            node.position = { x: 50, y: 50 };
+            break;
+          }
+        }
+      });
+
+      // Apply layout only to non-system nodes first
+      const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(newNodes, newEdges);
+
+      // Calculate bounds for system nodes based on their children
+      systemNodes.forEach((systemNode) => {
+        const childNodes = layoutedNodes.filter(n => n.parentId === systemNode.id);
+        
+        if (childNodes.length > 0) {
+          // Find bounding box of children
+          let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+          
+          childNodes.forEach(child => {
+            const nodeWidth = 250;
+            const nodeHeight = 100;
+            minX = Math.min(minX, child.position.x);
+            minY = Math.min(minY, child.position.y);
+            maxX = Math.max(maxX, child.position.x + nodeWidth);
+            maxY = Math.max(maxY, child.position.y + nodeHeight);
+          });
+          
+          // Add padding around children
+          const padding = 80;
+          systemNode.position = {
+            x: minX - padding,
+            y: minY - padding
+          };
+          systemNode.style = {
+            ...systemNode.style,
+            width: maxX - minX + padding * 2,
+            height: maxY - minY + padding * 2,
+          };
+          
+          // Adjust child positions to be relative to parent
+          childNodes.forEach(child => {
+            child.position = {
+              x: child.position.x - systemNode.position.x,
+              y: child.position.y - systemNode.position.y
+            };
+          });
+        } else {
+          // Empty system, give it minimum dimensions
+          systemNode.position = { x: 0, y: 0 };
+          systemNode.style = {
+            ...systemNode.style,
+            width: 300,
+            height: 200,
+          };
+        }
+      });
+
+      // Combine all nodes
+      const allNodes = [...systemNodes, ...layoutedNodes];
+
+      return { nodes: allNodes, edges: layoutedEdges };
     } catch (error) {
       console.error("Error parsing CALM data:", error);
       return { nodes: [], edges: [] };

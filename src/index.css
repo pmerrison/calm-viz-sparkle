@@ -59,4 +59,12 @@ All colors MUST be HSL.
   .react-flow__edge-labels {
     z-index: 60 !important;
   }
+  
+  .react-flow__node-group {
+    z-index: -1 !important;
+  }
+  
+  .react-flow__node-custom {
+    z-index: 1 !important;
+  }
 }
