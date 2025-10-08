@@ -3,6 +3,7 @@ import { Header } from "@/components/Header";
 import { JsonEditor } from "@/components/JsonEditor";
 import { ArchitectureGraph } from "@/components/ArchitectureGraph";
 import { NodeDetails } from "@/components/NodeDetails";
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { toast } from "sonner";
 
 const SAMPLE_CALM = {
@@ -319,28 +320,36 @@ const Index = () => {
       <Header />
       
       <main className="flex-1 flex flex-col overflow-hidden">
-        <div className="flex-1 w-full p-6 flex flex-col lg:flex-row gap-6 overflow-hidden">
-          <div className="flex-1 min-h-0">
-            <JsonEditor 
-              value={jsonContent}
-              onChange={handleJsonChange}
-              onFileUpload={handleFileUpload}
-            />
-          </div>
-          
-          <div className="flex-1 min-h-0">
-            {selectedNode ? (
-              <NodeDetails 
-                node={selectedNode}
-                onClose={() => setSelectedNode(null)}
-              />
-            ) : (
-              <ArchitectureGraph 
-                jsonData={parsedData}
-                onNodeClick={setSelectedNode}
-              />
-            )}
-          </div>
+        <div className="flex-1 w-full p-6 overflow-hidden">
+          <ResizablePanelGroup direction="horizontal" className="gap-6">
+            <ResizablePanel defaultSize={50} minSize={30}>
+              <div className="h-full">
+                <JsonEditor 
+                  value={jsonContent}
+                  onChange={handleJsonChange}
+                  onFileUpload={handleFileUpload}
+                />
+              </div>
+            </ResizablePanel>
+            
+            <ResizableHandle withHandle />
+            
+            <ResizablePanel defaultSize={50} minSize={30}>
+              <div className="h-full">
+                {selectedNode ? (
+                  <NodeDetails 
+                    node={selectedNode}
+                    onClose={() => setSelectedNode(null)}
+                  />
+                ) : (
+                  <ArchitectureGraph 
+                    jsonData={parsedData}
+                    onNodeClick={setSelectedNode}
+                  />
+                )}
+              </div>
+            </ResizablePanel>
+          </ResizablePanelGroup>
         </div>
       </main>
     </div>
