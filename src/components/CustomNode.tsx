@@ -11,10 +11,27 @@ export const CustomNode = ({ data }: NodeProps) => {
   // Extract AIGF data
   const aigf = data.metadata?.aigf;
   const riskLevel = aigf?.['risk-level'] || null;
-  const risks = aigf?.risks || [];
-  const mitigations = aigf?.mitigations || [];
-  const riskCount = Array.isArray(risks) ? risks.length : 0;
-  const mitigationCount = Array.isArray(mitigations) ? mitigations.length : 0;
+  const riskIds = aigf?.risks || [];
+  const mitigationIds = aigf?.mitigations || [];
+
+  // Get lookup tables from parent
+  const aigfLookup = data._aigfLookup || { risks: [], mitigations: [] };
+  const allRisks = aigfLookup.risks || [];
+  const allMitigations = aigfLookup.mitigations || [];
+
+  // Resolve risk and mitigation details
+  const risks = riskIds.map((riskId: string) => {
+    const found = allRisks.find((r: any) => r.id === riskId);
+    return found || riskId;
+  });
+
+  const mitigations = mitigationIds.map((mitigationId: string) => {
+    const found = allMitigations.find((m: any) => m.id === mitigationId);
+    return found || mitigationId;
+  });
+
+  const riskCount = risks.length;
+  const mitigationCount = mitigations.length;
 
   // Determine border color based on risk level
   const getBorderColor = () => {
@@ -99,7 +116,12 @@ export const CustomNode = ({ data }: NodeProps) => {
               <div className="text-xs text-foreground">
                 {risks.map((risk: any, idx: number) => (
                   <div key={idx} className="mb-1">
-                    {typeof risk === 'string' ? risk : risk.id || risk.name}
+                    {typeof risk === 'string'
+                      ? risk
+                      : risk.id && risk.name
+                        ? `${risk.id}: ${risk.name}`
+                        : risk.id || risk.name
+                    }
                   </div>
                 ))}
               </div>
@@ -111,7 +133,12 @@ export const CustomNode = ({ data }: NodeProps) => {
               <div className="text-xs text-foreground">
                 {mitigations.map((mitigation: any, idx: number) => (
                   <div key={idx} className="mb-1">
-                    {typeof mitigation === 'string' ? mitigation : mitigation.id || mitigation.name}
+                    {typeof mitigation === 'string'
+                      ? mitigation
+                      : mitigation.id && mitigation.name
+                        ? `${mitigation.id}: ${mitigation.name}`
+                        : mitigation.id || mitigation.name
+                    }
                   </div>
                 ))}
               </div>

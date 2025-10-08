@@ -27,14 +27,14 @@ interface ArchitectureGraphProps {
 const getLayoutedElements = (nodes: Node[], edges: Edge[]) => {
   const dagreGraph = new dagre.graphlib.Graph();
   dagreGraph.setDefaultEdgeLabel(() => ({}));
-  
+
   const nodeWidth = 250;
   const nodeHeight = 100;
-  
-  dagreGraph.setGraph({ 
+
+  dagreGraph.setGraph({
     rankdir: 'LR',
     ranksep: 150,
-    nodesep: 100,
+    nodesep: 180, // Increased from 100 to accommodate node expansion on hover
     edgesep: 50,
     marginx: 50,
     marginy: 50
@@ -78,7 +78,12 @@ export const ArchitectureGraph = ({ jsonData, onNodeClick }: ArchitectureGraphPr
     const newEdges: Edge[] = [];
     const systemNodes: Node[] = [];
     const deploymentMap: Record<string, string[]> = {}; // systemId -> [childNodeIds]
-    
+
+    // Extract top-level AIGF metadata for lookups
+    const aigfMetadata = data.metadata?.['aigf-governance'] || {};
+    const allRisks = aigfMetadata.risks || [];
+    const allMitigations = aigfMetadata.mitigations || [];
+
     try {
       // Parse nodes from CALM structure - handle both array and object formats
       const nodesData = data.nodes || [];
@@ -110,9 +115,10 @@ export const ArchitectureGraph = ({ jsonData, onNodeClick }: ArchitectureGraphPr
                 id,
                 type: "custom",
                 position: { x: 0, y: 0 },
-                data: { 
+                data: {
                   label: node.name || id,
-                  ...node 
+                  ...node,
+                  _aigfLookup: { risks: allRisks, mitigations: allMitigations }
                 },
                 sourcePosition: Position.Right,
                 targetPosition: Position.Left,
@@ -144,9 +150,10 @@ export const ArchitectureGraph = ({ jsonData, onNodeClick }: ArchitectureGraphPr
               id,
               type: "custom",
               position: { x: 0, y: 0 },
-              data: { 
+              data: {
                 label: (node as any).name || (node as any).unique_id || id,
-                ...node 
+                ...node,
+                _aigfLookup: { risks: allRisks, mitigations: allMitigations }
               },
               sourcePosition: Position.Right,
               targetPosition: Position.Left,
@@ -397,6 +404,36 @@ export const ArchitectureGraph = ({ jsonData, onNodeClick }: ArchitectureGraphPr
     [onNodeClick]
   );
 
+  const handleNodeMouseEnter = useCallback(
+    (_event: React.MouseEvent, node: Node) => {
+      setNodes((nds) =>
+        nds.map((n) => ({
+          ...n,
+          style: {
+            ...n.style,
+            zIndex: n.id === node.id ? 1000 : (n.style?.zIndex || 1),
+          },
+        }))
+      );
+    },
+    [setNodes]
+  );
+
+  const handleNodeMouseLeave = useCallback(
+    (_event: React.MouseEvent, node: Node) => {
+      setNodes((nds) =>
+        nds.map((n) => ({
+          ...n,
+          style: {
+            ...n.style,
+            zIndex: n.type === 'group' ? -1 : 1,
+          },
+        }))
+      );
+    },
+    [setNodes]
+  );
+
   const isEmpty = nodes.length === 0;
 
   return (
@@ -428,6 +465,8 @@ export const ArchitectureGraph = ({ jsonData, onNodeClick }: ArchitectureGraphPr
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onNodeClick={handleNodeClick}
+            onNodeMouseEnter={handleNodeMouseEnter}
+            onNodeMouseLeave={handleNodeMouseLeave}
             fitView
             fitViewOptions={{ padding: 0.2 }}
             attributionPosition="bottom-left"
