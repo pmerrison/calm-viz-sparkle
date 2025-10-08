@@ -54,3 +54,9 @@ All colors MUST be HSL.
     @apply bg-background text-foreground;
   }
 }
+
+@layer components {
+  .react-flow__edge-labels {
+    z-index: 60 !important;
+  }
+}
