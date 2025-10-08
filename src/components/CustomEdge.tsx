@@ -26,6 +26,7 @@ export const CustomEdge = ({
 
   const description = data?.description || '';
   const protocol = data?.protocol || '';
+  const port = data?.port || '';
 
   return (
     <>
@@ -54,14 +55,21 @@ export const CustomEdge = ({
               </div>
               
               {isHovered && (
-                <div className="absolute left-1/2 -translate-x-1/2 top-8 z-50 animate-fade-in">
+                <div className="absolute left-1/2 -translate-x-1/2 top-8 z-[9999] animate-fade-in pointer-events-none">
                   <div className="bg-card border-2 border-border rounded-lg shadow-lg p-3 max-w-xs">
                     <p className="text-xs font-medium text-foreground mb-1">{description}</p>
-                    {protocol && (
-                      <p className="text-xs text-muted-foreground">
-                        Protocol: <span className="font-mono text-accent">{protocol}</span>
-                      </p>
-                    )}
+                    <div className="flex gap-3 text-xs text-muted-foreground">
+                      {protocol && (
+                        <span>
+                          Protocol: <span className="font-mono text-accent">{protocol}</span>
+                        </span>
+                      )}
+                      {port && (
+                        <span>
+                          Port: <span className="font-mono text-accent">{port}</span>
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <div className="absolute left-1/2 -translate-x-1/2 -top-1 w-2 h-2 bg-card border-l-2 border-t-2 border-border rotate-45" />
                 </div>

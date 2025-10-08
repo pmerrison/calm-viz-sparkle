@@ -16,6 +16,7 @@ import { Card } from "./ui/card";
 import { Network, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "./ui/alert";
 import { CustomEdge } from "./CustomEdge";
+import { CustomNode } from "./CustomNode";
 
 interface ArchitectureGraphProps {
   jsonData: any;
@@ -67,6 +68,7 @@ export const ArchitectureGraph = ({ jsonData, onNodeClick }: ArchitectureGraphPr
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 
   const edgeTypes = useMemo(() => ({ custom: CustomEdge }), []);
+  const nodeTypes = useMemo(() => ({ custom: CustomNode }), []);
 
   const parseCALMData = useCallback((data: any) => {
     if (!data) return { nodes: [], edges: [] };
@@ -85,21 +87,11 @@ export const ArchitectureGraph = ({ jsonData, onNodeClick }: ArchitectureGraphPr
           if (id) {
             newNodes.push({
               id,
-              type: "default",
+              type: "custom",
               position: { x: 0, y: 0 }, // Will be set by layout algorithm
               data: { 
                 label: node.name || id,
                 ...node 
-              },
-              style: {
-                background: "hsl(var(--card))",
-                border: "2px solid hsl(var(--primary))",
-                borderRadius: "12px",
-                padding: "16px",
-                width: 220,
-                color: "hsl(var(--foreground))",
-                fontSize: "14px",
-                fontWeight: "500",
               },
               sourcePosition: Position.Right,
               targetPosition: Position.Left,
@@ -111,21 +103,11 @@ export const ArchitectureGraph = ({ jsonData, onNodeClick }: ArchitectureGraphPr
         Object.entries(nodesData).forEach(([id, node]: [string, any]) => {
           newNodes.push({
             id,
-            type: "default",
+            type: "custom",
             position: { x: 0, y: 0 },
             data: { 
               label: node.name || node.unique_id || id,
               ...node 
-            },
-            style: {
-              background: "hsl(var(--card))",
-              border: "2px solid hsl(var(--primary))",
-              borderRadius: "12px",
-              padding: "16px",
-              width: 220,
-              color: "hsl(var(--foreground))",
-              fontSize: "14px",
-              fontWeight: "500",
             },
             sourcePosition: Position.Right,
             targetPosition: Position.Left,
@@ -139,6 +121,7 @@ export const ArchitectureGraph = ({ jsonData, onNodeClick }: ArchitectureGraphPr
         let sourceId = null;
         let targetId = null;
         let label = "";
+        let port = "";
         
         // Handle FINOS CALM nested structure
         if (rel["relationship-type"]?.connects) {
@@ -146,12 +129,27 @@ export const ArchitectureGraph = ({ jsonData, onNodeClick }: ArchitectureGraphPr
           sourceId = connects.source?.node;
           targetId = connects.destination?.node;
           label = rel.description || rel.protocol || "";
+          
+          // Extract port from destination interface if available
+          const destInterfaceId = connects.destination?.interface;
+          if (destInterfaceId && data.nodes) {
+            const destNode = data.nodes.find((n: any) => 
+              (n["unique-id"] || n.unique_id || n.id) === targetId
+            );
+            if (destNode?.interfaces) {
+              const destInterface = destNode.interfaces.find((i: any) => 
+                (i["unique-id"] || i.unique_id || i.id) === destInterfaceId
+              );
+              port = destInterface?.port || "";
+            }
+          }
         } 
         // Fallback to simple formats
         else {
           sourceId = rel.source || rel.from || rel.source_id;
           targetId = rel.target || rel.to || rel.target_id;
           label = rel.relationship_type || rel.type || rel.label || "";
+          port = rel.port || "";
         }
         
         if (sourceId && targetId) {
@@ -173,7 +171,8 @@ export const ArchitectureGraph = ({ jsonData, onNodeClick }: ArchitectureGraphPr
             },
             data: {
               description: label,
-              protocol: rel.protocol || ""
+              protocol: rel.protocol || "",
+              port: port
             }
           });
         }
@@ -226,6 +225,7 @@ export const ArchitectureGraph = ({ jsonData, onNodeClick }: ArchitectureGraphPr
           <ReactFlow
             nodes={nodes}
             edges={edges}
+            nodeTypes={nodeTypes}
             edgeTypes={edgeTypes}
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
