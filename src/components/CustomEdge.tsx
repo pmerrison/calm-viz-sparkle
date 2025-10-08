@@ -54,7 +54,7 @@ export const CustomEdge = ({
               </div>
               
               {isHovered && (
-                <div className="absolute left-1/2 -translate-x-1/2 top-8 z-50 animate-fade-in">
+                <div className="absolute left-1/2 -translate-x-1/2 top-8 z-[9999] animate-fade-in">
                   <div className="bg-card border-2 border-border rounded-lg shadow-lg p-3 max-w-xs">
                     <p className="text-xs font-medium text-foreground mb-1">{description}</p>
                     {protocol && (
