@@ -6,6 +6,9 @@ import { ArchitectureGraph } from "@/components/ArchitectureGraph";
 import { NodeDetails } from "@/components/NodeDetails";
 import { FlowsPanel } from "@/components/FlowsPanel";
 import { ControlsPanel } from "@/components/ControlsPanel";
+import { GitHubConnectDialog } from "@/components/GitHubConnectDialog";
+import { GitHubFileBrowser } from "@/components/GitHubFileBrowser";
+import { GitHubService, GitHubTokenStorage, type GitHubFile } from "@/services/github";
 import { toast } from "sonner";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { useJsonPositionMap } from "@/hooks/useJsonPositionMap";
@@ -307,6 +310,13 @@ const Index = () => {
   const editorRef = useRef<any>(null);
   const decorationsRef = useRef<string[]>([]);
 
+  // GitHub integration state
+  const [showGitHubDialog, setShowGitHubDialog] = useState(false);
+  const [githubRepo, setGithubRepo] = useState<{ owner: string; repo: string } | null>(null);
+  const [githubFiles, setGithubFiles] = useState<GitHubFile[]>([]);
+  const [selectedGithubFile, setSelectedGithubFile] = useState<string | undefined>();
+  const [githubService, setGithubService] = useState<GitHubService | null>(null);
+
   // Build position map for jump-to-definition
   const positionMap = useJsonPositionMap(jsonContent);
 
@@ -474,6 +484,72 @@ const Index = () => {
     toast.success(`Returned to ${previousLevel.name}`);
   }, [historyStack]);
 
+  const handleConnectGitHub = useCallback(async (owner: string, repo: string, token?: string) => {
+    try {
+      // Save token if provided
+      if (token) {
+        GitHubTokenStorage.save(token);
+      } else {
+        // Try to load saved token
+        const savedToken = GitHubTokenStorage.load();
+        token = savedToken || undefined;
+      }
+
+      const service = new GitHubService(token);
+      setGithubService(service);
+
+      toast.promise(
+        service.getRepoTree(owner, repo),
+        {
+          loading: `Connecting to ${owner}/${repo}...`,
+          success: (files) => {
+            setGithubRepo({ owner, repo });
+            setGithubFiles(files);
+            setSelectedGithubFile(undefined);
+            return `Connected! Found ${files.length} JSON files`;
+          },
+          error: (err) => `Failed to connect: ${err.message}`,
+        }
+      );
+    } catch (error) {
+      console.error('Error connecting to GitHub:', error);
+    }
+  }, []);
+
+  const handleGitHubFileSelect = useCallback(async (file: GitHubFile) => {
+    if (!githubRepo || !githubService) return;
+
+    try {
+      setSelectedGithubFile(file.path);
+
+      const content = await toast.promise(
+        githubService.getFileContent(githubRepo.owner, githubRepo.repo, file.path),
+        {
+          loading: `Loading ${file.path}...`,
+          success: `Loaded ${file.path}`,
+          error: (err) => `Failed to load file: ${err.message}`,
+        }
+      );
+
+      // Clear history when loading from GitHub
+      setHistoryStack([]);
+
+      const parsed = JSON.parse(content);
+      setJsonContent(JSON.stringify(parsed, null, 2));
+      setParsedData(parsed);
+      setSelectedNode(null);
+    } catch (error) {
+      console.error('Error loading GitHub file:', error);
+    }
+  }, [githubRepo, githubService]);
+
+  const handleCloseGitHub = useCallback(() => {
+    setGithubRepo(null);
+    setGithubFiles([]);
+    setSelectedGithubFile(undefined);
+    setGithubService(null);
+  }, []);
+
   const flows = parsedData?.flows || [];
   const controls = parsedData?.controls || {};
   const hasFlows = flows.length > 0;
@@ -486,7 +562,7 @@ const Index = () => {
 
   return (
     <div className="h-screen bg-background flex flex-col">
-      <Header />
+      <Header onConnectGitHub={() => setShowGitHubDialog(true)} />
       <NavigationBar
         currentArchitectureName={currentArchitectureName}
         breadcrumbs={breadcrumbs}
@@ -494,13 +570,36 @@ const Index = () => {
         onNavigateBack={handleNavigateBack}
       />
 
+      <GitHubConnectDialog
+        open={showGitHubDialog}
+        onOpenChange={setShowGitHubDialog}
+        onConnect={handleConnectGitHub}
+      />
+
       <main className="flex-1 flex flex-col overflow-hidden min-h-0">
         <div className="flex-1 w-full p-6 overflow-hidden min-h-0">
           <ResizablePanelGroup direction="vertical" className="h-full">
-            {/* Top Row: Editor + Graph/NodeDetails */}
+            {/* Top Row: GitHub Browser (if connected) + Editor + Graph/NodeDetails */}
             <ResizablePanel defaultSize={hasMetadata ? 60 : 100} minSize={30}>
               <ResizablePanelGroup direction="horizontal">
-                <ResizablePanel defaultSize={50} minSize={30}>
+                {githubRepo && githubFiles.length > 0 && (
+                  <>
+                    <ResizablePanel defaultSize={20} minSize={15} maxSize={30}>
+                      <div className="h-full pr-3 pb-3">
+                        <GitHubFileBrowser
+                          owner={githubRepo.owner}
+                          repo={githubRepo.repo}
+                          files={githubFiles}
+                          selectedFile={selectedGithubFile}
+                          onFileSelect={handleGitHubFileSelect}
+                          onClose={handleCloseGitHub}
+                        />
+                      </div>
+                    </ResizablePanel>
+                    <ResizableHandle withHandle />
+                  </>
+                )}
+                <ResizablePanel defaultSize={githubRepo ? 40 : 50} minSize={30}>
                   <div className="h-full pr-3 pb-3">
                     <JsonEditor
                       value={jsonContent}
@@ -513,7 +612,7 @@ const Index = () => {
 
                 <ResizableHandle withHandle />
 
-                <ResizablePanel defaultSize={50} minSize={30}>
+                <ResizablePanel defaultSize={githubRepo ? 40 : 50} minSize={30}>
                   <div className="h-full pl-3 pb-3">
                     {selectedNode ? (
                       <NodeDetails
