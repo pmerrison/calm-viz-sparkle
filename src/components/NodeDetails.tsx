@@ -6,7 +6,7 @@ import { ScrollArea } from "./ui/scroll-area";
 interface NodeDetailsProps {
   node: any;
   onClose: () => void;
-  onLoadDetailedArchitecture?: (url: string) => void;
+  onLoadDetailedArchitecture?: (url: string, nodeName?: string) => void;
 }
 
 export const NodeDetails = ({ node, onClose, onLoadDetailedArchitecture }: NodeDetailsProps) => {
@@ -105,7 +105,7 @@ export const NodeDetails = ({ node, onClose, onLoadDetailedArchitecture }: NodeD
                         size="sm"
                         variant="default"
                         className="h-7 text-xs"
-                        onClick={() => onLoadDetailedArchitecture?.(detailedArchitecture)}
+                        onClick={() => onLoadDetailedArchitecture?.(detailedArchitecture, node.name || node['unique-id'])}
                       >
                         <ZoomIn className="w-3 h-3 mr-1" />
                         Load Detailed View

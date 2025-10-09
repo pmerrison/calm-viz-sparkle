@@ -292,10 +292,17 @@ const SAMPLE_CALM = {
   ]
 };
 
+interface ArchitectureLevel {
+  name: string;
+  jsonContent: string;
+  parsedData: any;
+}
+
 const Index = () => {
   const [jsonContent, setJsonContent] = useState(JSON.stringify(SAMPLE_CALM, null, 2));
   const [parsedData, setParsedData] = useState<any>(SAMPLE_CALM);
   const [selectedNode, setSelectedNode] = useState<any>(null);
+  const [historyStack, setHistoryStack] = useState<ArchitectureLevel[]>([]);
   const editorRef = useRef<any>(null);
   const decorationsRef = useRef<string[]>([]);
 
@@ -418,8 +425,15 @@ const Index = () => {
     }
   }, [jumpToDefinition]);
 
-  const handleLoadDetailedArchitecture = useCallback(async (url: string) => {
+  const handleLoadDetailedArchitecture = useCallback(async (url: string, parentNodeName?: string) => {
     try {
+      // Save current state to history before navigating
+      const currentLevel: ArchitectureLevel = {
+        name: parsedData?.metadata?.name || 'Root Architecture',
+        jsonContent,
+        parsedData,
+      };
+
       // Fetch the CALM file from the URL
       const response = await fetch(url);
       if (!response.ok) {
@@ -433,12 +447,31 @@ const Index = () => {
       setParsedData(parsed);
       setSelectedNode(null); // Close node details
 
-      toast.success(`Loaded detailed architecture from ${url}`);
+      // Push current state to history
+      setHistoryStack(prev => [...prev, currentLevel]);
+
+      toast.success(`Loaded detailed architecture${parentNodeName ? ` for ${parentNodeName}` : ''}`);
     } catch (error) {
       console.error('Error loading detailed architecture:', error);
       toast.error(`Failed to load architecture: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
-  }, []);
+  }, [jsonContent, parsedData]);
+
+  const handleNavigateBack = useCallback(() => {
+    if (historyStack.length === 0) return;
+
+    // Pop the last level from history
+    const previousLevel = historyStack[historyStack.length - 1];
+    const newHistory = historyStack.slice(0, -1);
+
+    // Restore previous state
+    setJsonContent(previousLevel.jsonContent);
+    setParsedData(previousLevel.parsedData);
+    setSelectedNode(null);
+    setHistoryStack(newHistory);
+
+    toast.success(`Returned to ${previousLevel.name}`);
+  }, [historyStack]);
 
   const flows = parsedData?.flows || [];
   const controls = parsedData?.controls || {};
@@ -446,9 +479,18 @@ const Index = () => {
   const hasControls = Object.keys(controls).length > 0;
   const hasMetadata = hasFlows || hasControls;
 
+  // Build breadcrumbs from history
+  const breadcrumbs = historyStack.map(level => level.name);
+  const currentArchitectureName = parsedData?.metadata?.name;
+
   return (
     <div className="h-screen bg-background flex flex-col">
-      <Header />
+      <Header
+        currentArchitectureName={currentArchitectureName}
+        breadcrumbs={breadcrumbs}
+        canNavigateBack={historyStack.length > 0}
+        onNavigateBack={handleNavigateBack}
+      />
 
       <main className="flex-1 flex flex-col overflow-hidden min-h-0">
         <div className="flex-1 w-full p-6 overflow-hidden min-h-0">
