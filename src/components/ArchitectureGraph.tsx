@@ -166,15 +166,51 @@ export const ArchitectureGraph = ({ jsonData, onNodeClick, onEdgeClick }: Archit
       // Parse relationships/edges - handle FINOS CALM nested format
       const relationships = data.relationships || [];
       relationships.forEach((rel: any, index: number) => {
-        // Check for deployed-in relationship
-        if (rel["relationship-type"]?.["deployed-in"]) {
-          const deployedIn = rel["relationship-type"]["deployed-in"];
-          const containerId = deployedIn.container;
-          const childNodeIds = deployedIn.nodes || [];
-          
+        // Check for deployed-in or composed-of relationships (both handle container-nodes)
+        if (rel["relationship-type"]?.["deployed-in"] || rel["relationship-type"]?.["composed-of"]) {
+          const containerRel = rel["relationship-type"]["deployed-in"] || rel["relationship-type"]["composed-of"];
+          const containerId = containerRel.container;
+          const childNodeIds = containerRel.nodes || [];
+
           if (containerId && childNodeIds.length > 0) {
             deploymentMap[containerId] = childNodeIds;
           }
+        }
+        // Handle interacts relationships (actor to multiple nodes)
+        else if (rel["relationship-type"]?.interacts) {
+          const interacts = rel["relationship-type"].interacts;
+          const actorId = interacts.actor;
+          const targetNodeIds = interacts.nodes || [];
+          const label = rel.description || "interacts";
+
+          // Create edges from actor to each target node
+          targetNodeIds.forEach((targetId: string, targetIndex: number) => {
+            newEdges.push({
+              id: `edge-${index}-${targetIndex}`,
+              source: actorId,
+              target: targetId,
+              type: "custom",
+              animated: false, // Non-animated to distinguish from connects
+              style: {
+                stroke: "hsl(280 75% 60%)", // Purple for actor interactions
+                strokeWidth: 2,
+                strokeDasharray: "5,5", // Dashed line
+              },
+              markerEnd: {
+                type: MarkerType.ArrowClosed,
+                color: "hsl(280 75% 60%)",
+                width: 25,
+                height: 25,
+              },
+              data: {
+                description: label,
+                protocol: rel.protocol || "",
+                metadata: rel.metadata || {},
+                'unique-id': rel['unique-id'] || rel.unique_id || rel.id,
+                relationshipType: 'interacts'
+              }
+            });
+          });
         }
         // Handle regular connections
         else if (rel["relationship-type"]?.connects) {

@@ -3,9 +3,12 @@ import { Header } from "@/components/Header";
 import { JsonEditor } from "@/components/JsonEditor";
 import { ArchitectureGraph } from "@/components/ArchitectureGraph";
 import { NodeDetails } from "@/components/NodeDetails";
+import { FlowsPanel } from "@/components/FlowsPanel";
+import { ControlsPanel } from "@/components/ControlsPanel";
 import { toast } from "sonner";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { useJsonPositionMap } from "@/hooks/useJsonPositionMap";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const SAMPLE_CALM = {
   "$schema": "https://raw.githubusercontent.com/finos/architecture-as-code/main/calm/draft/2024-04/meta/core.json",
@@ -415,14 +418,20 @@ const Index = () => {
     }
   }, [jumpToDefinition]);
 
+  const flows = parsedData?.flows || [];
+  const controls = parsedData?.controls || {};
+  const hasFlows = flows.length > 0;
+  const hasControls = Object.keys(controls).length > 0;
+  const hasMetadata = hasFlows || hasControls;
+
   return (
     <div className="h-screen bg-background flex flex-col">
       <Header />
-      
+
       <main className="flex-1 flex flex-col overflow-hidden min-h-0">
         <div className="flex-1 w-full p-6 overflow-hidden min-h-0">
           <ResizablePanelGroup direction="horizontal" className="h-full">
-            <ResizablePanel defaultSize={50} minSize={30}>
+            <ResizablePanel defaultSize={hasMetadata ? 33 : 50} minSize={25}>
               <div className="h-full pr-3">
                 <JsonEditor
                   value={jsonContent}
@@ -435,8 +444,8 @@ const Index = () => {
 
             <ResizableHandle withHandle />
 
-            <ResizablePanel defaultSize={50} minSize={30}>
-              <div className="h-full pl-3">
+            <ResizablePanel defaultSize={hasMetadata ? 34 : 50} minSize={25}>
+              <div className="h-full px-3">
                 {selectedNode ? (
                   <NodeDetails
                     node={selectedNode}
@@ -451,6 +460,52 @@ const Index = () => {
                 )}
               </div>
             </ResizablePanel>
+
+            {hasMetadata && (
+              <>
+                <ResizableHandle withHandle />
+                <ResizablePanel defaultSize={33} minSize={20}>
+                  <div className="h-full pl-3">
+                    {hasFlows && hasControls ? (
+                      <Tabs defaultValue="flows" className="h-full flex flex-col">
+                        <TabsList className="w-full grid grid-cols-2">
+                          <TabsTrigger value="flows">Flows ({flows.length})</TabsTrigger>
+                          <TabsTrigger value="controls">Controls ({Object.keys(controls).length})</TabsTrigger>
+                        </TabsList>
+                        <TabsContent value="flows" className="flex-1 overflow-hidden mt-2">
+                          <FlowsPanel
+                            flows={flows}
+                            onTransitionClick={(relId) => jumpToDefinition(relId, 'relationship')}
+                          />
+                        </TabsContent>
+                        <TabsContent value="controls" className="flex-1 overflow-hidden mt-2">
+                          <ControlsPanel
+                            controls={controls}
+                            onNodeClick={(nodeId) => {
+                              const node = parsedData?.nodes?.find((n: any) => n['unique-id'] === nodeId);
+                              if (node) handleNodeClick(node);
+                            }}
+                          />
+                        </TabsContent>
+                      </Tabs>
+                    ) : hasFlows ? (
+                      <FlowsPanel
+                        flows={flows}
+                        onTransitionClick={(relId) => jumpToDefinition(relId, 'relationship')}
+                      />
+                    ) : (
+                      <ControlsPanel
+                        controls={controls}
+                        onNodeClick={(nodeId) => {
+                          const node = parsedData?.nodes?.find((n: any) => n['unique-id'] === nodeId);
+                          if (node) handleNodeClick(node);
+                        }}
+                      />
+                    )}
+                  </div>
+                </ResizablePanel>
+              </>
+            )}
           </ResizablePanelGroup>
         </div>
       </main>
