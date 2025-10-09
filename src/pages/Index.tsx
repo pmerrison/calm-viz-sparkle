@@ -527,17 +527,17 @@ const Index = () => {
       setSelectedGithubFile(file.path);
 
       console.log('Calling githubService.getFileContent...');
-      const content = await toast.promise(
-        githubService.getFileContent(githubRepo.owner, githubRepo.repo, file.path),
-        {
-          loading: `Loading ${file.path}...`,
-          success: `Loaded ${file.path}`,
-          error: (err) => `Failed to load file: ${err.message}`,
-        }
-      );
 
-      console.log('Got content from GitHub, length:', content?.length);
-      console.log('Content preview:', content?.substring(0, 200));
+      // Fetch content with loading toast
+      toast.loading(`Loading ${file.path}...`);
+      const content = await githubService.getFileContent(githubRepo.owner, githubRepo.repo, file.path);
+
+      console.log('Got content from GitHub, type:', typeof content, 'length:', content?.length);
+      console.log('Content preview:', typeof content === 'string' ? content.substring(0, 200) : content);
+
+      if (typeof content !== 'string') {
+        throw new Error(`Expected string content, got ${typeof content}`);
+      }
 
       // Clear history when loading from GitHub
       setHistoryStack([]);
@@ -553,9 +553,13 @@ const Index = () => {
       setParsedData(parsed);
       setSelectedNode(null);
 
+      toast.dismiss();
+      toast.success(`Loaded ${file.path}`);
+
       console.log('Editor content should now be updated');
     } catch (error) {
       console.error('Error loading GitHub file:', error);
+      toast.dismiss();
       toast.error(`Failed to load file: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }, [githubRepo, githubService]);
