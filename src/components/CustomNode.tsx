@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
-import { Shield, AlertTriangle, AlertCircle, User, Globe, Box, Cog, Database, Network, Users, Globe2, FileText } from 'lucide-react';
+import { Shield, AlertTriangle, AlertCircle, User, Globe, Box, Cog, Database, Network, Users, Globe2, FileText, ZoomIn } from 'lucide-react';
 
 export const CustomNode = ({ data }: NodeProps) => {
   const [isHovered, setIsHovered] = useState(false);
 
   const description = data.description || 'No description available';
   const nodeType = data['node-type'] || data.node_type || data.type || 'Unknown';
+  const detailedArchitecture = data.details?.['detailed-architecture'];
 
   // Extract AIGF data
   const aigf = data.metadata?.aigf;
@@ -108,6 +109,9 @@ export const CustomNode = ({ data }: NodeProps) => {
         <div className="font-semibold mb-1 flex-1 flex items-center gap-2">
           <NodeIcon className="w-4 h-4 flex-shrink-0" style={{ color: nodeTypeStyle.color }} />
           <span>{data.label}</span>
+          {detailedArchitecture && (
+            <ZoomIn className="w-3.5 h-3.5 flex-shrink-0 text-blue-600 dark:text-blue-400" title="Has detailed architecture" />
+          )}
         </div>
         {(riskCount > 0 || mitigationCount > 0) && (
           <div className="flex gap-1 items-center">

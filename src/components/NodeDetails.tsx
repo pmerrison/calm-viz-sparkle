@@ -1,14 +1,15 @@
 import { Card } from "./ui/card";
-import { Info, X, Shield, AlertCircle, AlertTriangle, Network } from "lucide-react";
+import { Info, X, Shield, AlertCircle, AlertTriangle, Network, ZoomIn, ExternalLink } from "lucide-react";
 import { Button } from "./ui/button";
 import { ScrollArea } from "./ui/scroll-area";
 
 interface NodeDetailsProps {
   node: any;
   onClose: () => void;
+  onLoadDetailedArchitecture?: (url: string) => void;
 }
 
-export const NodeDetails = ({ node, onClose }: NodeDetailsProps) => {
+export const NodeDetails = ({ node, onClose, onLoadDetailedArchitecture }: NodeDetailsProps) => {
   if (!node) return null;
 
   // Extract AIGF data
@@ -16,6 +17,10 @@ export const NodeDetails = ({ node, onClose }: NodeDetailsProps) => {
   const riskLevel = aigf?.['risk-level'];
   const risks = aigf?.risks || [];
   const mitigations = aigf?.mitigations || [];
+
+  // Extract details
+  const detailedArchitecture = node.details?.['detailed-architecture'];
+  const requiredPattern = node.details?.['required-pattern'];
 
   const getRiskColor = (level: string) => {
     switch (level) {
@@ -37,8 +42,8 @@ export const NodeDetails = ({ node, onClose }: NodeDetailsProps) => {
     return String(value);
   };
 
-  // Filter out metadata.aigf and interfaces from general properties since we'll show them specially
-  const otherProperties = Object.entries(node).filter(([key]) => key !== 'metadata' && key !== 'interfaces');
+  // Filter out metadata.aigf, interfaces, and details from general properties since we'll show them specially
+  const otherProperties = Object.entries(node).filter(([key]) => key !== 'metadata' && key !== 'interfaces' && key !== 'details');
   const otherMetadata = node.metadata ? Object.entries(node.metadata).filter(([key]) => key !== 'aigf') : [];
   const interfaces = node.interfaces || [];
 
@@ -78,6 +83,54 @@ export const NodeDetails = ({ node, onClose }: NodeDetailsProps) => {
               ))}
             </div>
           </div>
+
+          {/* Detailed Architecture Section */}
+          {(detailedArchitecture || requiredPattern) && (
+            <div>
+              <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                <ZoomIn className="w-4 h-4" />
+                Architecture Details
+              </h3>
+              <div className="space-y-2">
+                {detailedArchitecture && (
+                  <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <div>
+                        <span className="text-xs font-medium text-muted-foreground block mb-1">Detailed Architecture</span>
+                        <span className="text-xs text-blue-600 dark:text-blue-400 break-all">{detailedArchitecture}</span>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="default"
+                        className="h-7 text-xs"
+                        onClick={() => onLoadDetailedArchitecture?.(detailedArchitecture)}
+                      >
+                        <ZoomIn className="w-3 h-3 mr-1" />
+                        Load Detailed View
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-xs"
+                        onClick={() => window.open(detailedArchitecture, '_blank')}
+                      >
+                        <ExternalLink className="w-3 h-3 mr-1" />
+                        Open in New Tab
+                      </Button>
+                    </div>
+                  </div>
+                )}
+                {requiredPattern && (
+                  <div className="p-3 rounded-lg bg-purple-500/10 border border-purple-500/20">
+                    <span className="text-xs font-medium text-muted-foreground block mb-1">Required Pattern</span>
+                    <span className="text-sm text-purple-600 dark:text-purple-400">{requiredPattern}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Interfaces Section */}
           {interfaces.length > 0 && (

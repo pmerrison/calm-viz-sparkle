@@ -418,6 +418,28 @@ const Index = () => {
     }
   }, [jumpToDefinition]);
 
+  const handleLoadDetailedArchitecture = useCallback(async (url: string) => {
+    try {
+      // Fetch the CALM file from the URL
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch: ${response.statusText}`);
+      }
+      const content = await response.text();
+      const parsed = JSON.parse(content);
+
+      // Update the editor and parsed data
+      setJsonContent(JSON.stringify(parsed, null, 2));
+      setParsedData(parsed);
+      setSelectedNode(null); // Close node details
+
+      toast.success(`Loaded detailed architecture from ${url}`);
+    } catch (error) {
+      console.error('Error loading detailed architecture:', error);
+      toast.error(`Failed to load architecture: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }, []);
+
   const flows = parsedData?.flows || [];
   const controls = parsedData?.controls || {};
   const hasFlows = flows.length > 0;
@@ -453,6 +475,7 @@ const Index = () => {
                       <NodeDetails
                         node={selectedNode}
                         onClose={() => setSelectedNode(null)}
+                        onLoadDetailedArchitecture={handleLoadDetailedArchitecture}
                       />
                     ) : (
                       <ArchitectureGraph

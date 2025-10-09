@@ -400,6 +400,9 @@
       "node-type": "service",
       "name": "AI Agent Core",
       "description": "The central processing unit of the system, orchestrating all internal processes and external tool interactions. This is the heart of the agentic system.",
+      "details": {
+        "detailed-architecture": "/agent-internal-architecture.json"
+      },
       "interfaces": [
         {
           "unique-id": "agent-core-interface"
