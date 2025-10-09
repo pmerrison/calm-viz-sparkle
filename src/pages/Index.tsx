@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback } from "react";
 import { Header } from "@/components/Header";
+import { NavigationBar } from "@/components/NavigationBar";
 import { JsonEditor } from "@/components/JsonEditor";
 import { ArchitectureGraph } from "@/components/ArchitectureGraph";
 import { NodeDetails } from "@/components/NodeDetails";
@@ -485,7 +486,8 @@ const Index = () => {
 
   return (
     <div className="h-screen bg-background flex flex-col">
-      <Header
+      <Header />
+      <NavigationBar
         currentArchitectureName={currentArchitectureName}
         breadcrumbs={breadcrumbs}
         canNavigateBack={historyStack.length > 0}
