@@ -92,20 +92,30 @@ export class GitHubService {
    */
   async getFileContent(owner: string, repo: string, path: string): Promise<string> {
     try {
+      console.log(`Fetching file: ${owner}/${repo}/${path}`);
+
       const response = await fetch(
         `https://api.github.com/repos/${owner}/${repo}/contents/${path}`,
         { headers: this.getHeaders() }
       );
 
+      console.log('Response status:', response.status, response.statusText);
+
       if (!response.ok) {
+        const errorBody = await response.text();
+        console.error('Error response:', errorBody);
         throw new Error(`Failed to fetch file: ${response.statusText}`);
       }
 
       const data = await response.json();
+      console.log('Response data keys:', Object.keys(data));
 
       // GitHub returns base64 encoded content
       if (data.content) {
-        return atob(data.content.replace(/\n/g, ''));
+        const decoded = atob(data.content.replace(/\n/g, ''));
+        console.log('Decoded content length:', decoded.length);
+        console.log('First 100 chars:', decoded.substring(0, 100));
+        return decoded;
       }
 
       throw new Error('No content found in response');

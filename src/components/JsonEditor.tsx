@@ -2,7 +2,7 @@ import { Editor } from "@monaco-editor/react";
 import { Card } from "./ui/card";
 import { Upload, FileText } from "lucide-react";
 import { Button } from "./ui/button";
-import { useRef } from "react";
+import { useRef, useEffect } from "react";
 
 interface JsonEditorProps {
   value: string;
@@ -14,7 +14,13 @@ interface JsonEditorProps {
 export const JsonEditor = ({ value, onChange, onFileUpload, onEditorReady }: JsonEditorProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  useEffect(() => {
+    console.log('JsonEditor value prop changed, length:', value?.length);
+    console.log('First 200 chars:', value?.substring(0, 200));
+  }, [value]);
+
   const handleEditorDidMount = (editor: any) => {
+    console.log('Monaco editor mounted');
     if (onEditorReady) {
       onEditorReady(editor);
     }

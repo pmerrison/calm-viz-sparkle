@@ -517,11 +517,16 @@ const Index = () => {
   }, []);
 
   const handleGitHubFileSelect = useCallback(async (file: GitHubFile) => {
-    if (!githubRepo || !githubService) return;
+    if (!githubRepo || !githubService) {
+      console.error('Missing GitHub repo or service:', { githubRepo, githubService });
+      return;
+    }
 
     try {
+      console.log('handleGitHubFileSelect called with file:', file);
       setSelectedGithubFile(file.path);
 
+      console.log('Calling githubService.getFileContent...');
       const content = await toast.promise(
         githubService.getFileContent(githubRepo.owner, githubRepo.repo, file.path),
         {
@@ -531,15 +536,27 @@ const Index = () => {
         }
       );
 
+      console.log('Got content from GitHub, length:', content?.length);
+      console.log('Content preview:', content?.substring(0, 200));
+
       // Clear history when loading from GitHub
       setHistoryStack([]);
 
+      console.log('Parsing JSON...');
       const parsed = JSON.parse(content);
-      setJsonContent(JSON.stringify(parsed, null, 2));
+      console.log('Parsed successfully, setting editor content...');
+
+      const formattedContent = JSON.stringify(parsed, null, 2);
+      console.log('Formatted content length:', formattedContent.length);
+
+      setJsonContent(formattedContent);
       setParsedData(parsed);
       setSelectedNode(null);
+
+      console.log('Editor content should now be updated');
     } catch (error) {
       console.error('Error loading GitHub file:', error);
+      toast.error(`Failed to load file: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }, [githubRepo, githubService]);
 
