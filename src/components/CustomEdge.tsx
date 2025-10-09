@@ -81,7 +81,7 @@ export const CustomEdge = ({
               }}
               className="animate-fade-in"
             >
-              <div className="bg-card border-2 border-border rounded-lg shadow-lg p-3 max-w-sm">
+              <div className="bg-card border-2 border-border rounded-lg shadow-lg p-3 min-w-[400px] max-w-2xl">
                 <p className="text-xs font-medium text-foreground mb-2">{description}</p>
                 {protocol && (
                   <p className="text-xs text-muted-foreground mb-2">

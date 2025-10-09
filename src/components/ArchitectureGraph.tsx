@@ -22,6 +22,7 @@ import { SystemGroupNode } from "./SystemGroupNode";
 interface ArchitectureGraphProps {
   jsonData: any;
   onNodeClick: (node: any) => void;
+  onEdgeClick?: (edge: any) => void;
 }
 
 const getLayoutedElements = (nodes: Node[], edges: Edge[]) => {
@@ -64,7 +65,7 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[]) => {
   return { nodes: layoutedNodes, edges };
 };
 
-export const ArchitectureGraph = ({ jsonData, onNodeClick }: ArchitectureGraphProps) => {
+export const ArchitectureGraph = ({ jsonData, onNodeClick, onEdgeClick }: ArchitectureGraphProps) => {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 
@@ -202,7 +203,8 @@ export const ArchitectureGraph = ({ jsonData, onNodeClick }: ArchitectureGraphPr
               data: {
                 description: label,
                 protocol: rel.protocol || "",
-                metadata: rel.metadata || {}
+                metadata: rel.metadata || {},
+                'unique-id': rel['unique-id'] || rel.unique_id || rel.id
               }
             });
           }
@@ -233,7 +235,8 @@ export const ArchitectureGraph = ({ jsonData, onNodeClick }: ArchitectureGraphPr
               data: {
                 description: label,
                 protocol: rel.protocol || "",
-                metadata: rel.metadata || {}
+                metadata: rel.metadata || {},
+                'unique-id': rel['unique-id'] || rel.unique_id || rel.id
               }
             });
           }
@@ -434,6 +437,15 @@ export const ArchitectureGraph = ({ jsonData, onNodeClick }: ArchitectureGraphPr
     [setNodes]
   );
 
+  const handleEdgeClick = useCallback(
+    (_event: React.MouseEvent, edge: Edge) => {
+      if (onEdgeClick) {
+        onEdgeClick(edge.data);
+      }
+    },
+    [onEdgeClick]
+  );
+
   const isEmpty = nodes.length === 0;
 
   return (
@@ -467,6 +479,7 @@ export const ArchitectureGraph = ({ jsonData, onNodeClick }: ArchitectureGraphPr
             onNodeClick={handleNodeClick}
             onNodeMouseEnter={handleNodeMouseEnter}
             onNodeMouseLeave={handleNodeMouseLeave}
+            onEdgeClick={handleEdgeClick}
             fitView
             fitViewOptions={{ padding: 0.2 }}
             attributionPosition="bottom-left"

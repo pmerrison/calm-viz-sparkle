@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { Header } from "@/components/Header";
 import { JsonEditor } from "@/components/JsonEditor";
 import { ArchitectureGraph } from "@/components/ArchitectureGraph";
 import { NodeDetails } from "@/components/NodeDetails";
 import { toast } from "sonner";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
+import { useJsonPositionMap } from "@/hooks/useJsonPositionMap";
 
 const SAMPLE_CALM = {
   "$schema": "https://raw.githubusercontent.com/finos/architecture-as-code/main/calm/draft/2024-04/meta/core.json",
@@ -292,6 +293,11 @@ const Index = () => {
   const [jsonContent, setJsonContent] = useState(JSON.stringify(SAMPLE_CALM, null, 2));
   const [parsedData, setParsedData] = useState<any>(SAMPLE_CALM);
   const [selectedNode, setSelectedNode] = useState<any>(null);
+  const editorRef = useRef<any>(null);
+  const decorationsRef = useRef<string[]>([]);
+
+  // Build position map for jump-to-definition
+  const positionMap = useJsonPositionMap(jsonContent);
 
   const handleJsonChange = (value: string) => {
     setJsonContent(value);
@@ -315,6 +321,100 @@ const Index = () => {
     }
   };
 
+  const jumpToDefinition = useCallback((id: string, type: 'node' | 'relationship') => {
+    console.log('jumpToDefinition called:', { id, type, hasEditor: !!editorRef.current });
+
+    if (!editorRef.current) {
+      console.warn('Editor not ready');
+      return;
+    }
+
+    const location = type === 'node'
+      ? positionMap.nodes.get(id)
+      : positionMap.relationships.get(id);
+
+    if (!location) {
+      console.warn(`No position found for ${type} with id: ${id}`);
+      return;
+    }
+
+    const editor = editorRef.current;
+
+    // json-source-map returns { value, valueEnd } or just { line, column, pos }
+    const start = location.value || location.start || location;
+    const end = location.valueEnd || location.end || location;
+
+    if (!start || typeof start.line !== 'number') {
+      console.warn(`Invalid location structure for ${type} with id: ${id}`, location);
+      return;
+    }
+
+    // Convert 0-based positions to 1-based Monaco positions
+    const startLine = start.line + 1;
+    const startColumn = start.column + 1;
+    const endLine = end.line + 1;
+    const endColumn = end.column + 1;
+
+    // Scroll to and reveal the line
+    editor.revealLineInCenter(startLine);
+
+    // Set selection to highlight the entire object
+    editor.setSelection({
+      startLineNumber: startLine,
+      startColumn: startColumn,
+      endLineNumber: endLine,
+      endColumn: endColumn,
+    });
+
+    // Add decoration for visual highlighting
+    const newDecorations = editor.deltaDecorations(decorationsRef.current, [
+      {
+        range: {
+          startLineNumber: startLine,
+          startColumn: 1,
+          endLineNumber: endLine,
+          endColumn: endColumn,
+        },
+        options: {
+          isWholeLine: false,
+          className: 'highlighted-definition',
+          glyphMarginClassName: 'highlighted-glyph',
+          inlineClassName: 'highlighted-inline',
+        },
+      },
+    ]);
+
+    decorationsRef.current = newDecorations;
+
+    // Focus the editor
+    editor.focus();
+
+    // Clear decorations after 3 seconds
+    setTimeout(() => {
+      if (editorRef.current) {
+        editorRef.current.deltaDecorations(decorationsRef.current, []);
+        decorationsRef.current = [];
+      }
+    }, 3000);
+  }, [positionMap]);
+
+  const handleNodeClick = useCallback((node: any) => {
+    console.log('handleNodeClick called:', node);
+    const nodeId = node['unique-id'] || node.unique_id || node.id;
+    console.log('Extracted node ID:', nodeId);
+    if (nodeId) {
+      jumpToDefinition(nodeId, 'node');
+    }
+    setSelectedNode(node);
+  }, [jumpToDefinition]);
+
+  const handleEdgeClick = useCallback((edge: any) => {
+    const edgeId = edge['unique-id'] || edge.unique_id || edge.id;
+    if (edgeId) {
+      jumpToDefinition(edgeId, 'relationship');
+    }
+  }, [jumpToDefinition]);
+
   return (
     <div className="h-screen bg-background flex flex-col">
       <Header />
@@ -324,10 +424,11 @@ const Index = () => {
           <ResizablePanelGroup direction="horizontal" className="h-full">
             <ResizablePanel defaultSize={50} minSize={30}>
               <div className="h-full pr-3">
-                <JsonEditor 
+                <JsonEditor
                   value={jsonContent}
                   onChange={handleJsonChange}
                   onFileUpload={handleFileUpload}
+                  onEditorReady={(editor) => (editorRef.current = editor)}
                 />
               </div>
             </ResizablePanel>
@@ -337,14 +438,15 @@ const Index = () => {
             <ResizablePanel defaultSize={50} minSize={30}>
               <div className="h-full pl-3">
                 {selectedNode ? (
-                  <NodeDetails 
+                  <NodeDetails
                     node={selectedNode}
                     onClose={() => setSelectedNode(null)}
                   />
                 ) : (
-                  <ArchitectureGraph 
+                  <ArchitectureGraph
                     jsonData={parsedData}
-                    onNodeClick={setSelectedNode}
+                    onNodeClick={handleNodeClick}
+                    onEdgeClick={handleEdgeClick}
                   />
                 )}
               </div>

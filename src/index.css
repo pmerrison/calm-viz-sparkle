@@ -59,12 +59,28 @@ All colors MUST be HSL.
   .react-flow__edge-labels {
     z-index: 60 !important;
   }
-  
+
   .react-flow__node-group {
     z-index: -1 !important;
   }
-  
+
   .react-flow__node-custom {
     z-index: 1 !important;
+  }
+
+  /* Monaco Editor jump-to-definition highlighting */
+  .highlighted-definition {
+    background-color: hsl(var(--accent) / 0.15);
+    border: 2px solid hsl(var(--accent));
+    animation: pulse-highlight 0.6s ease-in-out;
+  }
+
+  @keyframes pulse-highlight {
+    0%, 100% {
+      background-color: hsl(var(--accent) / 0.15);
+    }
+    50% {
+      background-color: hsl(var(--accent) / 0.3);
+    }
   }
 }

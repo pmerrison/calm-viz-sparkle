@@ -8,10 +8,17 @@ interface JsonEditorProps {
   value: string;
   onChange: (value: string) => void;
   onFileUpload: (content: string) => void;
+  onEditorReady?: (editor: any) => void;
 }
 
-export const JsonEditor = ({ value, onChange, onFileUpload }: JsonEditorProps) => {
+export const JsonEditor = ({ value, onChange, onFileUpload, onEditorReady }: JsonEditorProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleEditorDidMount = (editor: any) => {
+    if (onEditorReady) {
+      onEditorReady(editor);
+    }
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -58,6 +65,7 @@ export const JsonEditor = ({ value, onChange, onFileUpload }: JsonEditorProps) =
           defaultLanguage="json"
           value={value}
           onChange={(value) => onChange(value || "")}
+          onMount={handleEditorDidMount}
           theme="vs-dark"
           options={{
             minimap: { enabled: false },
