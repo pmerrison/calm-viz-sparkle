@@ -430,55 +430,64 @@ const Index = () => {
 
       <main className="flex-1 flex flex-col overflow-hidden min-h-0">
         <div className="flex-1 w-full p-6 overflow-hidden min-h-0">
-          <ResizablePanelGroup direction="horizontal" className="h-full">
-            <ResizablePanel defaultSize={hasMetadata ? 33 : 50} minSize={25}>
-              <div className="h-full pr-3">
-                <JsonEditor
-                  value={jsonContent}
-                  onChange={handleJsonChange}
-                  onFileUpload={handleFileUpload}
-                  onEditorReady={(editor) => (editorRef.current = editor)}
-                />
-              </div>
+          <ResizablePanelGroup direction="vertical" className="h-full">
+            {/* Top Row: Editor + Graph/NodeDetails */}
+            <ResizablePanel defaultSize={hasMetadata ? 60 : 100} minSize={30}>
+              <ResizablePanelGroup direction="horizontal">
+                <ResizablePanel defaultSize={50} minSize={30}>
+                  <div className="h-full pr-3 pb-3">
+                    <JsonEditor
+                      value={jsonContent}
+                      onChange={handleJsonChange}
+                      onFileUpload={handleFileUpload}
+                      onEditorReady={(editor) => (editorRef.current = editor)}
+                    />
+                  </div>
+                </ResizablePanel>
+
+                <ResizableHandle withHandle />
+
+                <ResizablePanel defaultSize={50} minSize={30}>
+                  <div className="h-full pl-3 pb-3">
+                    {selectedNode ? (
+                      <NodeDetails
+                        node={selectedNode}
+                        onClose={() => setSelectedNode(null)}
+                      />
+                    ) : (
+                      <ArchitectureGraph
+                        jsonData={parsedData}
+                        onNodeClick={handleNodeClick}
+                        onEdgeClick={handleEdgeClick}
+                      />
+                    )}
+                  </div>
+                </ResizablePanel>
+              </ResizablePanelGroup>
             </ResizablePanel>
 
-            <ResizableHandle withHandle />
-
-            <ResizablePanel defaultSize={hasMetadata ? 34 : 50} minSize={25}>
-              <div className="h-full px-3">
-                {selectedNode ? (
-                  <NodeDetails
-                    node={selectedNode}
-                    onClose={() => setSelectedNode(null)}
-                  />
-                ) : (
-                  <ArchitectureGraph
-                    jsonData={parsedData}
-                    onNodeClick={handleNodeClick}
-                    onEdgeClick={handleEdgeClick}
-                  />
-                )}
-              </div>
-            </ResizablePanel>
-
+            {/* Bottom Row: Flows + Controls (only if metadata exists) */}
             {hasMetadata && (
               <>
                 <ResizableHandle withHandle />
-                <ResizablePanel defaultSize={33} minSize={20}>
-                  <div className="h-full pl-3">
-                    {hasFlows && hasControls ? (
-                      <Tabs defaultValue="flows" className="h-full flex flex-col">
-                        <TabsList className="w-full grid grid-cols-2">
-                          <TabsTrigger value="flows">Flows ({flows.length})</TabsTrigger>
-                          <TabsTrigger value="controls">Controls ({Object.keys(controls).length})</TabsTrigger>
-                        </TabsList>
-                        <TabsContent value="flows" className="flex-1 overflow-hidden mt-2">
+                <ResizablePanel defaultSize={40} minSize={20}>
+                  <ResizablePanelGroup direction="horizontal">
+                    {hasFlows && (
+                      <ResizablePanel defaultSize={hasControls ? 50 : 100} minSize={30}>
+                        <div className="h-full pr-3 pt-3">
                           <FlowsPanel
                             flows={flows}
                             onTransitionClick={(relId) => jumpToDefinition(relId, 'relationship')}
                           />
-                        </TabsContent>
-                        <TabsContent value="controls" className="flex-1 overflow-hidden mt-2">
+                        </div>
+                      </ResizablePanel>
+                    )}
+
+                    {hasFlows && hasControls && <ResizableHandle withHandle />}
+
+                    {hasControls && (
+                      <ResizablePanel defaultSize={hasFlows ? 50 : 100} minSize={30}>
+                        <div className="h-full pl-3 pt-3">
                           <ControlsPanel
                             controls={controls}
                             onNodeClick={(nodeId) => {
@@ -486,23 +495,10 @@ const Index = () => {
                               if (node) handleNodeClick(node);
                             }}
                           />
-                        </TabsContent>
-                      </Tabs>
-                    ) : hasFlows ? (
-                      <FlowsPanel
-                        flows={flows}
-                        onTransitionClick={(relId) => jumpToDefinition(relId, 'relationship')}
-                      />
-                    ) : (
-                      <ControlsPanel
-                        controls={controls}
-                        onNodeClick={(nodeId) => {
-                          const node = parsedData?.nodes?.find((n: any) => n['unique-id'] === nodeId);
-                          if (node) handleNodeClick(node);
-                        }}
-                      />
+                        </div>
+                      </ResizablePanel>
                     )}
-                  </div>
+                  </ResizablePanelGroup>
                 </ResizablePanel>
               </>
             )}
