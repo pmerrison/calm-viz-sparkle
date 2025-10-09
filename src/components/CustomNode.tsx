@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
-import { Shield, AlertTriangle, AlertCircle } from 'lucide-react';
+import { Shield, AlertTriangle, AlertCircle, User, Globe, Box, Cog, Database, Network, Users, Globe2, FileText } from 'lucide-react';
 
 export const CustomNode = ({ data }: NodeProps) => {
   const [isHovered, setIsHovered] = useState(false);
@@ -33,19 +33,56 @@ export const CustomNode = ({ data }: NodeProps) => {
   const riskCount = risks.length;
   const mitigationCount = mitigations.length;
 
-  // Determine border color based on risk level
-  const getBorderColor = () => {
-    if (!riskLevel) return "hsl(var(--primary))";
-    switch (riskLevel) {
-      case 'critical':
-        return "hsl(0 84% 60%)"; // Red
-      case 'high':
-        return "hsl(25 95% 53%)"; // Orange
-      case 'medium':
-        return "hsl(48 96% 53%)"; // Yellow
+  // Get icon and color for node type
+  const getNodeTypeStyle = () => {
+    switch (nodeType.toLowerCase()) {
+      case 'actor':
+        return { icon: User, color: 'hsl(280 75% 60%)', label: 'Actor' };
+      case 'ecosystem':
+        return { icon: Globe, color: 'hsl(200 70% 60%)', label: 'Ecosystem' };
+      case 'system':
+        return { icon: Box, color: 'hsl(220 70% 60%)', label: 'System' };
+      case 'service':
+        return { icon: Cog, color: 'hsl(180 75% 55%)', label: 'Service' };
+      case 'database':
+      case 'datastore':
+      case 'data-store':
+        return { icon: Database, color: 'hsl(140 60% 55%)', label: 'Database' };
+      case 'network':
+        return { icon: Network, color: 'hsl(40 85% 60%)', label: 'Network' };
+      case 'ldap':
+        return { icon: Users, color: 'hsl(260 65% 60%)', label: 'LDAP' };
+      case 'webclient':
+        return { icon: Globe2, color: 'hsl(190 80% 60%)', label: 'Web Client' };
+      case 'data-asset':
+        return { icon: FileText, color: 'hsl(160 60% 55%)', label: 'Data Asset' };
+      case 'interface':
+        return { icon: Network, color: 'hsl(300 70% 60%)', label: 'Interface' };
+      case 'external-service':
+        return { icon: Globe2, color: 'hsl(340 65% 60%)', label: 'External Service' };
       default:
-        return "hsl(var(--primary))";
+        return { icon: Box, color: 'hsl(var(--primary))', label: nodeType };
     }
+  };
+
+  const nodeTypeStyle = getNodeTypeStyle();
+  const NodeIcon = nodeTypeStyle.icon;
+
+  // Determine border color based on risk level (or node type if no risk)
+  const getBorderColor = () => {
+    if (riskLevel) {
+      switch (riskLevel) {
+        case 'critical':
+          return "hsl(0 84% 60%)"; // Red
+        case 'high':
+          return "hsl(25 95% 53%)"; // Orange
+        case 'medium':
+          return "hsl(48 96% 53%)"; // Yellow
+        default:
+          return nodeTypeStyle.color;
+      }
+    }
+    return nodeTypeStyle.color;
   };
 
   return (
@@ -68,7 +105,10 @@ export const CustomNode = ({ data }: NodeProps) => {
       <Handle type="target" position={Position.Left} />
 
       <div className="flex items-start justify-between gap-2">
-        <div className="font-semibold mb-1 flex-1">{data.label}</div>
+        <div className="font-semibold mb-1 flex-1 flex items-center gap-2">
+          <NodeIcon className="w-4 h-4 flex-shrink-0" style={{ color: nodeTypeStyle.color }} />
+          <span>{data.label}</span>
+        </div>
         {(riskCount > 0 || mitigationCount > 0) && (
           <div className="flex gap-1 items-center">
             {riskCount > 0 && (

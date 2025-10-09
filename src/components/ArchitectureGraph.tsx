@@ -13,7 +13,7 @@ import ReactFlow, {
 import dagre from "dagre";
 import "reactflow/dist/style.css";
 import { Card } from "./ui/card";
-import { Network, AlertCircle } from "lucide-react";
+import { Network, AlertCircle, ExternalLink, FileText } from "lucide-react";
 import { Alert, AlertDescription } from "./ui/alert";
 import { CustomEdge } from "./CustomEdge";
 import { CustomNode } from "./CustomNode";
@@ -447,6 +447,7 @@ export const ArchitectureGraph = ({ jsonData, onNodeClick, onEdgeClick }: Archit
   );
 
   const isEmpty = nodes.length === 0;
+  const adrs = jsonData?.adrs || [];
 
   return (
     <Card className="h-full flex flex-col overflow-hidden border-border bg-card">
@@ -457,6 +458,29 @@ export const ArchitectureGraph = ({ jsonData, onNodeClick, onEdgeClick }: Archit
           {nodes.length} nodes, {edges.length} connections
         </span>
       </div>
+
+      {adrs.length > 0 && (
+        <div className="px-4 py-3 border-b border-border bg-muted/30">
+          <div className="flex items-center gap-2 mb-2">
+            <FileText className="w-3.5 h-3.5 text-muted-foreground" />
+            <h3 className="text-sm font-medium">Architecture Decision Records</h3>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {adrs.map((adr: string, index: number) => (
+              <a
+                key={index}
+                href={adr}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded bg-background/60 hover:bg-accent/20 border border-border transition-colors"
+              >
+                <ExternalLink className="w-3 h-3" />
+                <span className="truncate max-w-[300px]">{adr}</span>
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="flex-1 relative">
         {isEmpty ? (

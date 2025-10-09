@@ -1,5 +1,5 @@
 import { Card } from "./ui/card";
-import { Info, X, Shield, AlertCircle, AlertTriangle } from "lucide-react";
+import { Info, X, Shield, AlertCircle, AlertTriangle, Network } from "lucide-react";
 import { Button } from "./ui/button";
 import { ScrollArea } from "./ui/scroll-area";
 
@@ -37,9 +37,10 @@ export const NodeDetails = ({ node, onClose }: NodeDetailsProps) => {
     return String(value);
   };
 
-  // Filter out metadata.aigf from general properties since we'll show it specially
-  const otherProperties = Object.entries(node).filter(([key]) => key !== 'metadata');
+  // Filter out metadata.aigf and interfaces from general properties since we'll show them specially
+  const otherProperties = Object.entries(node).filter(([key]) => key !== 'metadata' && key !== 'interfaces');
   const otherMetadata = node.metadata ? Object.entries(node.metadata).filter(([key]) => key !== 'aigf') : [];
+  const interfaces = node.interfaces || [];
 
   return (
     <Card className="h-full flex flex-col border-border bg-card">
@@ -77,6 +78,51 @@ export const NodeDetails = ({ node, onClose }: NodeDetailsProps) => {
               ))}
             </div>
           </div>
+
+          {/* Interfaces Section */}
+          {interfaces.length > 0 && (
+            <div>
+              <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                <Network className="w-4 h-4" />
+                Interfaces
+              </h3>
+              <div className="space-y-2">
+                {interfaces.map((iface: any, idx: number) => (
+                  <div key={idx} className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                    <div className="space-y-2">
+                      {iface['unique-id'] && (
+                        <div>
+                          <span className="text-xs font-medium text-muted-foreground">ID: </span>
+                          <span className="text-sm font-mono text-blue-600 dark:text-blue-400">{iface['unique-id']}</span>
+                        </div>
+                      )}
+                      {iface['definition-url'] && (
+                        <div>
+                          <span className="text-xs font-medium text-muted-foreground">Definition: </span>
+                          <a
+                            href={iface['definition-url']}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-blue-600 dark:text-blue-400 hover:underline break-all"
+                          >
+                            {iface['definition-url']}
+                          </a>
+                        </div>
+                      )}
+                      {iface.config && (
+                        <div>
+                          <span className="text-xs font-medium text-muted-foreground mb-1 block">Config:</span>
+                          <pre className="text-xs text-foreground bg-secondary/50 p-2 rounded overflow-auto max-h-40">
+                            {JSON.stringify(iface.config, null, 2)}
+                          </pre>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* AIGF Governance Section */}
           {aigf && (
