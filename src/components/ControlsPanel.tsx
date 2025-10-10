@@ -6,9 +6,10 @@ import { Badge } from "./ui/badge";
 interface ControlsPanelProps {
   controls: Record<string, any>;
   onNodeClick?: (nodeId: string) => void;
+  onControlClick?: (controlId: string) => void;
 }
 
-export const ControlsPanel = ({ controls, onNodeClick }: ControlsPanelProps) => {
+export const ControlsPanel = ({ controls, onNodeClick, onControlClick }: ControlsPanelProps) => {
   if (!controls || Object.keys(controls).length === 0) return null;
 
   const controlEntries = Object.entries(controls);
@@ -28,7 +29,9 @@ export const ControlsPanel = ({ controls, onNodeClick }: ControlsPanelProps) => 
           {controlEntries.map(([controlId, control]: [string, any]) => (
             <div
               key={controlId}
-              className="rounded-lg border border-border bg-card/50 overflow-hidden"
+              className="rounded-lg border border-border bg-card/50 overflow-hidden hover:border-accent/50 transition-colors cursor-pointer"
+              onClick={() => onControlClick?.(controlId)}
+              title="Click to jump to control definition in JSON"
             >
               {/* Control Header */}
               <div className="p-3 bg-green-500/10 border-b border-border">
@@ -44,6 +47,16 @@ export const ControlsPanel = ({ controls, onNodeClick }: ControlsPanelProps) => 
                       onClick={() => onNodeClick?.(control.appliesTo)}
                     >
                       Node: {control.nodeName}
+                    </Badge>
+                  </div>
+                )}
+                {control.relationshipDescription && (
+                  <div className="mt-1 mb-2">
+                    <Badge
+                      variant="outline"
+                      className="text-xs"
+                    >
+                      Relationship: {control.relationshipDescription}
                     </Badge>
                   </div>
                 )}

@@ -9,6 +9,7 @@ interface MetadataPanelProps {
   controls: any;
   onTransitionClick?: (relationshipId: string) => void;
   onNodeClick?: (nodeId: string) => void;
+  onControlClick?: (controlId: string) => void;
   isCollapsed: boolean;
   onToggleCollapse: () => void;
 }
@@ -18,6 +19,7 @@ export const MetadataPanel = ({
   controls,
   onTransitionClick,
   onNodeClick,
+  onControlClick,
   isCollapsed,
   onToggleCollapse,
 }: MetadataPanelProps) => {
@@ -67,7 +69,7 @@ export const MetadataPanel = ({
 
           {hasControls && (
             <TabsContent value="controls" className="flex-1 overflow-hidden mt-0 p-4">
-              <ControlsPanel controls={controls} onNodeClick={onNodeClick} />
+              <ControlsPanel controls={controls} onNodeClick={onNodeClick} onControlClick={onControlClick} />
             </TabsContent>
           )}
         </Tabs>

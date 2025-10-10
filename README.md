@@ -130,7 +130,7 @@ The visualizer expects CALM-compliant JSON with this structure:
 }
 ```
 
-See the included `karl.json` example file for a complete AIGF-enhanced architecture.
+See the included `calm-example.json` example file for a complete AIGF-enhanced architecture.
 
 ## Technology Stack
 
@@ -158,7 +158,7 @@ src/
 │   └── Index.tsx               # Main application page
 ├── lib/                        # Utility functions
 └── public/
-    └── karl.json               # Example CALM architecture
+    └── calm-example.json       # Example CALM architecture
 ```
 
 ## Contributing

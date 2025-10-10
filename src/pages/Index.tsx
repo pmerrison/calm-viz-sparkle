@@ -13,7 +13,7 @@ import { toast } from "sonner";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useJsonPositionMap } from "@/hooks/useJsonPositionMap";
-import SAMPLE_CALM from "../../karl.json";
+import SAMPLE_CALM from "../../calm-example.json";
 
 interface ArchitectureLevel {
   name: string;
@@ -331,9 +331,10 @@ const Index = () => {
 
   const flows = parsedData?.flows || [];
 
-  // Collect controls from both root level (old format) and from nodes (new CALM spec format)
+  // Collect controls from both root level (old format) and from nodes and relationships (new CALM spec format)
   const rootControls = parsedData?.controls || {};
   const nodeControls: Record<string, any> = {};
+  const relationshipControls: Record<string, any> = {};
 
   // Extract controls from nodes
   const nodes = parsedData?.nodes || [];
@@ -347,13 +348,32 @@ const Index = () => {
           ...control,
           appliesTo: nodeId,
           nodeName: node.name || nodeId,
+          appliesToType: 'node',
         };
       });
     }
   });
 
-  // Merge both control sources (root-level takes precedence for same IDs)
-  const controls = { ...nodeControls, ...rootControls };
+  // Extract controls from relationships
+  const relationships = parsedData?.relationships || [];
+  relationships.forEach((relationship: any) => {
+    if (relationship.controls) {
+      const relId = relationship['unique-id'] || relationship.unique_id || relationship.id;
+      Object.entries(relationship.controls).forEach(([controlId, control]: [string, any]) => {
+        // Prefix with relationship ID to make it unique and show which relationship it applies to
+        const uniqueControlId = `${relId}/${controlId}`;
+        relationshipControls[uniqueControlId] = {
+          ...control,
+          appliesTo: relId,
+          relationshipDescription: relationship.description || relId,
+          appliesToType: 'relationship',
+        };
+      });
+    }
+  });
+
+  // Merge all control sources (root-level takes precedence for same IDs)
+  const controls = { ...nodeControls, ...relationshipControls, ...rootControls };
 
   const hasFlows = flows.length > 0;
   const hasControls = Object.keys(controls).length > 0;
@@ -498,6 +518,7 @@ const Index = () => {
                       const node = parsedData?.nodes?.find((n: any) => n['unique-id'] === nodeId);
                       if (node) handleNodeClick(node);
                     }}
+                    onControlClick={(controlId) => jumpToDefinition(controlId, 'control')}
                     isCollapsed={false}
                     onToggleCollapse={() => setIsMetadataCollapsed(true)}
                   />
@@ -515,6 +536,7 @@ const Index = () => {
                     const node = parsedData?.nodes?.find((n: any) => n['unique-id'] === nodeId);
                     if (node) handleNodeClick(node);
                   }}
+                  onControlClick={(controlId) => jumpToDefinition(controlId, 'control')}
                   isCollapsed={true}
                   onToggleCollapse={() => setIsMetadataCollapsed(false)}
                 />

@@ -75,6 +75,19 @@ export const useJsonPositionMap = (jsonString: string): PositionMap => {
             if (location) {
               map.relationships.set(relId, location);
             }
+
+            // Map controls within this relationship
+            if (rel.controls && typeof rel.controls === 'object') {
+              Object.keys(rel.controls).forEach((controlId) => {
+                const controlPointer = `/relationships/${index}/controls/${controlId}`;
+                const controlLocation = pointers[controlPointer];
+
+                if (controlLocation) {
+                  const key = `${relId}/${controlId}`;
+                  map.controls.set(key, controlLocation);
+                }
+              });
+            }
           }
         });
       }
