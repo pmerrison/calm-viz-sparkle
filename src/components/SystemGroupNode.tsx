@@ -11,14 +11,16 @@ export const SystemGroupNode = ({ data }: NodeProps) => {
         padding: "24px",
         width: "100%",
         height: "100%",
+        pointerEvents: "none", // Allow clicks to pass through to child nodes
       }}
     >
-      <div 
+      <div
         className="absolute top-3 left-4 px-3 py-1 rounded-md font-semibold text-xs"
         style={{
           background: "hsl(var(--muted))",
           color: "hsl(var(--muted-foreground))",
           border: "1px solid hsl(var(--border))",
+          pointerEvents: "auto", // Re-enable pointer events for the label so it's clickable
         }}
       >
         {data.label}

@@ -18,6 +18,7 @@ export interface SourceLocation {
 export interface PositionMap {
   nodes: Map<string, SourceLocation>;
   relationships: Map<string, SourceLocation>;
+  controls: Map<string, SourceLocation>; // Key format: "nodeId/controlId"
 }
 
 /**
@@ -28,6 +29,7 @@ export const useJsonPositionMap = (jsonString: string): PositionMap => {
     const map: PositionMap = {
       nodes: new Map(),
       relationships: new Map(),
+      controls: new Map(),
     };
 
     try {
@@ -44,6 +46,19 @@ export const useJsonPositionMap = (jsonString: string): PositionMap => {
 
             if (location) {
               map.nodes.set(nodeId, location);
+            }
+
+            // Map controls within this node
+            if (node.controls && typeof node.controls === 'object') {
+              Object.keys(node.controls).forEach((controlId) => {
+                const controlPointer = `/nodes/${index}/controls/${controlId}`;
+                const controlLocation = pointers[controlPointer];
+
+                if (controlLocation) {
+                  const key = `${nodeId}/${controlId}`;
+                  map.controls.set(key, controlLocation);
+                }
+              });
             }
           }
         });

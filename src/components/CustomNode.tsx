@@ -1,9 +1,13 @@
 import { useState } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
-import { Shield, AlertTriangle, AlertCircle, User, Globe, Box, Cog, Database, Network, Users, Globe2, FileText, ZoomIn } from 'lucide-react';
+import { Shield, AlertTriangle, AlertCircle, User, Globe, Box, Cog, Database, Network, Users, Globe2, FileText, ZoomIn, Info } from 'lucide-react';
 
 export const CustomNode = ({ data }: NodeProps) => {
   const [isHovered, setIsHovered] = useState(false);
+
+  // Get callbacks from data
+  const onShowDetails = data.onShowDetails;
+  const onJumpToControl = data.onJumpToControl;
 
   const description = data.description || 'No description available';
   const nodeType = data['node-type'] || data.node_type || data.type || 'Unknown';
@@ -33,6 +37,11 @@ export const CustomNode = ({ data }: NodeProps) => {
 
   const riskCount = risks.length;
   const mitigationCount = mitigations.length;
+
+  // Extract controls from node (CALM spec compliant)
+  const nodeControls = data.controls || {};
+  const controlEntries = Object.entries(nodeControls);
+  const controlCount = controlEntries.length;
 
   // Get icon and color for node type
   const getNodeTypeStyle = () => {
@@ -113,7 +122,7 @@ export const CustomNode = ({ data }: NodeProps) => {
             <ZoomIn className="w-3.5 h-3.5 flex-shrink-0 text-blue-600 dark:text-blue-400" title="Has detailed architecture" />
           )}
         </div>
-        {(riskCount > 0 || mitigationCount > 0) && (
+        {(riskCount > 0 || mitigationCount > 0 || controlCount > 0) && (
           <div className="flex gap-1 items-center">
             {riskCount > 0 && (
               <div
@@ -131,6 +140,12 @@ export const CustomNode = ({ data }: NodeProps) => {
               <div className="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-green-500/15 text-green-600 dark:text-green-400 text-xs font-medium">
                 <Shield className="w-3 h-3" />
                 <span>{mitigationCount}</span>
+              </div>
+            )}
+            {controlCount > 0 && (
+              <div className="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-blue-500/15 text-blue-600 dark:text-blue-400 text-xs font-medium">
+                <Shield className="w-3 h-3" />
+                <span>{controlCount}</span>
               </div>
             )}
           </div>
@@ -188,10 +203,54 @@ export const CustomNode = ({ data }: NodeProps) => {
               </div>
             </div>
           )}
+          {controlCount > 0 && (
+            <div className="border-t border-border pt-2">
+              <div className="text-xs text-muted-foreground mb-1">Controls:</div>
+              <div className="text-xs text-foreground space-y-1">
+                {controlEntries.map(([controlId, control]: [string, any], idx: number) => {
+                  const nodeId = data['unique-id'] || data.unique_id || data.id;
+                  const controlKey = `${nodeId}/${controlId}`;
+
+                  return (
+                    <div
+                      key={idx}
+                      className="mb-1 p-1.5 rounded hover:bg-accent/20 cursor-pointer transition-colors"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (onJumpToControl) {
+                          onJumpToControl(controlKey);
+                        }
+                      }}
+                      title="Click to jump to control definition in JSON"
+                    >
+                      <div className="font-medium text-blue-600 dark:text-blue-400">{controlId}</div>
+                      {control.description && (
+                        <div className="text-muted-foreground ml-2">{control.description}</div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
           <div className="border-t border-border pt-2">
             <div className="text-xs text-muted-foreground mb-1">Description:</div>
             <div className="text-xs text-foreground leading-relaxed">{description}</div>
           </div>
+          {onShowDetails && (
+            <div className="border-t border-border pt-2">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onShowDetails(data);
+                }}
+                className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+              >
+                <Info className="w-3.5 h-3.5" />
+                Show Details
+              </button>
+            </div>
+          )}
         </div>
       )}
 

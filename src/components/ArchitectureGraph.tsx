@@ -23,6 +23,8 @@ interface ArchitectureGraphProps {
   jsonData: any;
   onNodeClick: (node: any) => void;
   onEdgeClick?: (edge: any) => void;
+  onJumpToControl?: (controlId: string) => void;
+  onJumpToNode?: (nodeId: string) => void;
 }
 
 const getLayoutedElements = (nodes: Node[], edges: Edge[]) => {
@@ -65,14 +67,14 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[]) => {
   return { nodes: layoutedNodes, edges };
 };
 
-export const ArchitectureGraph = ({ jsonData, onNodeClick, onEdgeClick }: ArchitectureGraphProps) => {
+export const ArchitectureGraph = ({ jsonData, onNodeClick, onEdgeClick, onJumpToControl, onJumpToNode }: ArchitectureGraphProps) => {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 
   const edgeTypes = useMemo(() => ({ custom: CustomEdge }), []);
   const nodeTypes = useMemo(() => ({ custom: CustomNode, group: SystemGroupNode }), []);
 
-  const parseCALMData = useCallback((data: any) => {
+  const parseCALMData = useCallback((data: any, onShowDetailsCallback?: (nodeData: any) => void, onJumpToControlCallback?: (controlId: string) => void) => {
     if (!data) return { nodes: [], edges: [] };
 
     const newNodes: Node[] = [];
@@ -119,7 +121,9 @@ export const ArchitectureGraph = ({ jsonData, onNodeClick, onEdgeClick }: Archit
                 data: {
                   label: node.name || id,
                   ...node,
-                  _aigfLookup: { risks: allRisks, mitigations: allMitigations }
+                  _aigfLookup: { risks: allRisks, mitigations: allMitigations },
+                  onShowDetails: onShowDetailsCallback,
+                  onJumpToControl: onJumpToControlCallback
                 },
                 sourcePosition: Position.Right,
                 targetPosition: Position.Left,
@@ -154,7 +158,9 @@ export const ArchitectureGraph = ({ jsonData, onNodeClick, onEdgeClick }: Archit
               data: {
                 label: (node as any).name || (node as any).unique_id || id,
                 ...node,
-                _aigfLookup: { risks: allRisks, mitigations: allMitigations }
+                _aigfLookup: { risks: allRisks, mitigations: allMitigations },
+                onShowDetails: onShowDetailsCallback,
+                onJumpToControl: onJumpToControlCallback
               },
               sourcePosition: Position.Right,
               targetPosition: Position.Left,
@@ -431,16 +437,20 @@ export const ArchitectureGraph = ({ jsonData, onNodeClick, onEdgeClick }: Archit
   }, []);
 
   useEffect(() => {
-    const { nodes: parsedNodes, edges: parsedEdges } = parseCALMData(jsonData);
+    const { nodes: parsedNodes, edges: parsedEdges } = parseCALMData(jsonData, onNodeClick, onJumpToControl);
     setNodes(parsedNodes);
     setEdges(parsedEdges);
-  }, [jsonData, parseCALMData, setNodes, setEdges]);
+  }, [jsonData, parseCALMData, setNodes, setEdges, onNodeClick, onJumpToControl]);
 
   const handleNodeClick = useCallback(
     (_event: React.MouseEvent, node: Node) => {
-      onNodeClick(node.data);
+      // Jump to node definition in JSON editor
+      if (onJumpToNode) {
+        const nodeId = node.data['unique-id'] || node.data.unique_id || node.data.id || node.id;
+        onJumpToNode(nodeId);
+      }
     },
-    [onNodeClick]
+    [onJumpToNode]
   );
 
   const handleNodeMouseEnter = useCallback(
@@ -450,7 +460,7 @@ export const ArchitectureGraph = ({ jsonData, onNodeClick, onEdgeClick }: Archit
           ...n,
           style: {
             ...n.style,
-            zIndex: n.id === node.id ? 1000 : (n.style?.zIndex || 1),
+            zIndex: n.id === node.id && n.type !== 'group' ? 1000 : (n.type === 'group' ? -1 : 1),
           },
         }))
       );

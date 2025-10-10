@@ -40,10 +40,12 @@ export const NodeDetails = ({ node, onClose, onLoadDetailedArchitecture }: NodeD
     return String(value);
   };
 
-  // Filter out metadata.aigf, interfaces, and details from general properties since we'll show them specially
-  const otherProperties = Object.entries(node).filter(([key]) => key !== 'metadata' && key !== 'interfaces' && key !== 'details');
+  // Filter out metadata.aigf, interfaces, details, and controls from general properties since we'll show them specially
+  const otherProperties = Object.entries(node).filter(([key]) => key !== 'metadata' && key !== 'interfaces' && key !== 'details' && key !== 'controls');
   const otherMetadata = node.metadata ? Object.entries(node.metadata).filter(([key]) => key !== 'aigf') : [];
   const interfaces = node.interfaces || [];
+  const controls = node.controls || {};
+  const controlEntries = Object.entries(controls);
 
   return (
     <div className="h-full flex flex-col">
@@ -159,6 +161,63 @@ export const NodeDetails = ({ node, onClose, onLoadDetailedArchitecture }: NodeD
                         </div>
                       )}
                     </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Controls Section */}
+          {controlEntries.length > 0 && (
+            <div>
+              <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                <Shield className="w-4 h-4" />
+                Controls
+              </h3>
+              <div className="space-y-3">
+                {controlEntries.map(([controlId, control]: [string, any], idx: number) => (
+                  <div key={idx} className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                    <div className="text-sm font-bold text-blue-600 dark:text-blue-400 mb-2">{controlId}</div>
+                    {control.description && (
+                      <div className="text-sm text-foreground/90 mb-3">{control.description}</div>
+                    )}
+                    {control.requirements && control.requirements.length > 0 && (
+                      <div>
+                        <span className="text-xs font-medium text-muted-foreground block mb-2">Requirements:</span>
+                        <div className="space-y-2">
+                          {control.requirements.map((req: any, reqIdx: number) => (
+                            <div key={reqIdx} className="bg-secondary/50 p-2 rounded text-xs space-y-1">
+                              {req['requirement-url'] && (
+                                <div>
+                                  <span className="text-muted-foreground">Requirement: </span>
+                                  <a
+                                    href={req['requirement-url']}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-blue-600 dark:text-blue-400 hover:underline break-all"
+                                  >
+                                    {req['requirement-url']}
+                                  </a>
+                                </div>
+                              )}
+                              {req['config-url'] && (
+                                <div>
+                                  <span className="text-muted-foreground">Config: </span>
+                                  <a
+                                    href={req['config-url']}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-blue-600 dark:text-blue-400 hover:underline break-all"
+                                  >
+                                    {req['config-url']}
+                                  </a>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

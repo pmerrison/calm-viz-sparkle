@@ -36,6 +36,17 @@ export const ControlsPanel = ({ controls, onNodeClick }: ControlsPanelProps) => 
                   <Shield className="w-3.5 h-3.5 text-green-600 dark:text-green-400" />
                   <span className="font-mono text-xs text-muted-foreground">{controlId}</span>
                 </h3>
+                {control.nodeName && (
+                  <div className="mt-1 mb-2">
+                    <Badge
+                      variant="secondary"
+                      className="text-xs cursor-pointer hover:bg-accent"
+                      onClick={() => onNodeClick?.(control.appliesTo)}
+                    >
+                      Node: {control.nodeName}
+                    </Badge>
+                  </div>
+                )}
                 {control.description && (
                   <p className="text-xs text-foreground mt-1">{control.description}</p>
                 )}

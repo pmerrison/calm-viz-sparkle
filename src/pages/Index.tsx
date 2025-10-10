@@ -93,7 +93,7 @@ const Index = () => {
     }
   };
 
-  const jumpToDefinition = useCallback((id: string, type: 'node' | 'relationship') => {
+  const jumpToDefinition = useCallback((id: string, type: 'node' | 'relationship' | 'control') => {
     console.log('jumpToDefinition called:', { id, type, hasEditor: !!editorRef.current });
 
     // Auto-expand editor if collapsed
@@ -108,7 +108,9 @@ const Index = () => {
 
     const location = type === 'node'
       ? positionMap.nodes.get(id)
-      : positionMap.relationships.get(id);
+      : type === 'relationship'
+        ? positionMap.relationships.get(id)
+        : positionMap.controls.get(id);
 
     if (!location) {
       console.warn(`No position found for ${type} with id: ${id}`);
@@ -328,7 +330,31 @@ const Index = () => {
   }, []);
 
   const flows = parsedData?.flows || [];
-  const controls = parsedData?.controls || {};
+
+  // Collect controls from both root level (old format) and from nodes (new CALM spec format)
+  const rootControls = parsedData?.controls || {};
+  const nodeControls: Record<string, any> = {};
+
+  // Extract controls from nodes
+  const nodes = parsedData?.nodes || [];
+  nodes.forEach((node: any) => {
+    if (node.controls) {
+      const nodeId = node['unique-id'] || node.unique_id || node.id;
+      Object.entries(node.controls).forEach(([controlId, control]: [string, any]) => {
+        // Prefix with node ID to make it unique and show which node it applies to
+        const uniqueControlId = `${nodeId}/${controlId}`;
+        nodeControls[uniqueControlId] = {
+          ...control,
+          appliesTo: nodeId,
+          nodeName: node.name || nodeId,
+        };
+      });
+    }
+  });
+
+  // Merge both control sources (root-level takes precedence for same IDs)
+  const controls = { ...nodeControls, ...rootControls };
+
   const hasFlows = flows.length > 0;
   const hasControls = Object.keys(controls).length > 0;
   const hasMetadata = hasFlows || hasControls;
@@ -451,6 +477,8 @@ const Index = () => {
                       jsonData={parsedData}
                       onNodeClick={handleNodeClick}
                       onEdgeClick={handleEdgeClick}
+                      onJumpToControl={(controlId) => jumpToDefinition(controlId, 'control')}
+                      onJumpToNode={(nodeId) => jumpToDefinition(nodeId, 'node')}
                     />
                   </div>
                 </ResizablePanel>
