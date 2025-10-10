@@ -11,6 +11,7 @@ import { GitHubFileBrowser } from "@/components/GitHubFileBrowser";
 import { GitHubService, GitHubTokenStorage, type GitHubFile } from "@/services/github";
 import { toast } from "sonner";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useJsonPositionMap } from "@/hooks/useJsonPositionMap";
 
 const SAMPLE_CALM = {
@@ -727,19 +728,11 @@ const Index = () => {
                 {/* Graph Visualization - Always visible, takes remaining space */}
                 <ResizablePanel defaultSize={100}>
                   <div className="h-full p-6">
-                    {selectedNode ? (
-                      <NodeDetails
-                        node={selectedNode}
-                        onClose={() => setSelectedNode(null)}
-                        onLoadDetailedArchitecture={handleLoadDetailedArchitecture}
-                      />
-                    ) : (
-                      <ArchitectureGraph
-                        jsonData={parsedData}
-                        onNodeClick={handleNodeClick}
-                        onEdgeClick={handleEdgeClick}
-                      />
-                    )}
+                    <ArchitectureGraph
+                      jsonData={parsedData}
+                      onNodeClick={handleNodeClick}
+                      onEdgeClick={handleEdgeClick}
+                    />
                   </div>
                 </ResizablePanel>
               </ResizablePanelGroup>
@@ -783,6 +776,19 @@ const Index = () => {
           </ResizablePanelGroup>
         </div>
       </main>
+
+      {/* Node Details Slide-out Panel */}
+      <Sheet open={!!selectedNode} onOpenChange={(open) => !open && setSelectedNode(null)}>
+        <SheetContent side="right" className="w-[500px] sm:w-[600px] overflow-y-auto">
+          {selectedNode && (
+            <NodeDetails
+              node={selectedNode}
+              onClose={() => setSelectedNode(null)}
+              onLoadDetailedArchitecture={handleLoadDetailedArchitecture}
+            />
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };

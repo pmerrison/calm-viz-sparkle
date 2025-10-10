@@ -53,6 +53,15 @@ export class GitHubService {
         if (branch === 'main') {
           return this.getRepoTree(owner, repo, 'master');
         }
+
+        // Provide user-friendly error messages
+        if (repoResponse.status === 404) {
+          throw new Error(`Repository "${owner}/${repo}" not found. Please check the owner and repository name.`);
+        } else if (repoResponse.status === 403) {
+          throw new Error(`Access denied to "${owner}/${repo}". This may be a private repository - try adding a personal access token.`);
+        } else if (repoResponse.status === 401) {
+          throw new Error(`Authentication failed. Please check your personal access token.`);
+        }
         throw new Error(`Failed to fetch repository: ${repoResponse.statusText}`);
       }
 

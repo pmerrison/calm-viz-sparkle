@@ -1,7 +1,5 @@
-import { Card } from "./ui/card";
-import { Info, X, Shield, AlertCircle, AlertTriangle, Network, ZoomIn, ExternalLink } from "lucide-react";
+import { Info, Shield, AlertCircle, AlertTriangle, Network, ZoomIn, ExternalLink } from "lucide-react";
 import { Button } from "./ui/button";
-import { ScrollArea } from "./ui/scroll-area";
 
 interface NodeDetailsProps {
   node: any;
@@ -48,23 +46,13 @@ export const NodeDetails = ({ node, onClose, onLoadDetailedArchitecture }: NodeD
   const interfaces = node.interfaces || [];
 
   return (
-    <Card className="h-full flex flex-col border-border bg-card">
-      <div className="flex items-center justify-between p-4 border-b border-border">
-        <div className="flex items-center gap-2">
-          <Info className="w-4 h-4 text-primary" />
-          <h2 className="font-semibold">Node Details</h2>
-        </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onClose}
-          className="h-8 w-8 p-0"
-        >
-          <X className="w-4 h-4" />
-        </Button>
+    <div className="h-full flex flex-col">
+      <div className="flex items-center gap-2 mb-6">
+        <Info className="w-5 h-5 text-primary" />
+        <h2 className="text-lg font-semibold">Node Details</h2>
       </div>
 
-      <ScrollArea className="flex-1 p-4">
+      <div className="flex-1 overflow-y-auto">
         <div className="space-y-6">
           {/* Basic Information */}
           <div>
@@ -293,7 +281,7 @@ export const NodeDetails = ({ node, onClose, onLoadDetailedArchitecture }: NodeD
             </div>
           )}
         </div>
-      </ScrollArea>
-    </Card>
+      </div>
+    </div>
   );
 };
