@@ -16,7 +16,7 @@ export const Header = ({ onConnectGitHub }: HeaderProps) => {
             </div>
             <div>
               <h1 className="text-xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-                CALM Visualizer
+                CALM Explorer
               </h1>
               <p className="text-xs text-muted-foreground">FINOS Common Architecture Language Model</p>
             </div>

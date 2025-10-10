@@ -685,8 +685,7 @@ const Index = () => {
                   <>
                     <ResizablePanel
                       defaultSize={editorSizeBeforeCollapse}
-                      minSize={25}
-                      maxSize={60}
+                      minSize={20}
                       onResize={(size) => {
                         setEditorSizeBeforeCollapse(size);
                         localStorage.setItem('panel-editor-size', String(size));
@@ -726,7 +725,7 @@ const Index = () => {
                 )}
 
                 {/* Graph Visualization - Always visible, takes remaining space */}
-                <ResizablePanel defaultSize={100} minSize={30}>
+                <ResizablePanel defaultSize={100}>
                   <div className="h-full p-6">
                     {selectedNode ? (
                       <NodeDetails
