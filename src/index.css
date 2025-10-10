@@ -83,4 +83,10 @@ All colors MUST be HSL.
       background-color: hsl(var(--accent) / 0.3);
     }
   }
+
+  /* Vertical text for collapsed panels */
+  .writing-mode-vertical {
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+  }
 }

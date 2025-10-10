@@ -1,18 +1,17 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { Header } from "@/components/Header";
 import { NavigationBar } from "@/components/NavigationBar";
 import { JsonEditor } from "@/components/JsonEditor";
 import { ArchitectureGraph } from "@/components/ArchitectureGraph";
 import { NodeDetails } from "@/components/NodeDetails";
-import { FlowsPanel } from "@/components/FlowsPanel";
-import { ControlsPanel } from "@/components/ControlsPanel";
+import { CollapsiblePanel } from "@/components/CollapsiblePanel";
+import { MetadataPanel } from "@/components/MetadataPanel";
 import { GitHubConnectDialog } from "@/components/GitHubConnectDialog";
 import { GitHubFileBrowser } from "@/components/GitHubFileBrowser";
 import { GitHubService, GitHubTokenStorage, type GitHubFile } from "@/services/github";
 import { toast } from "sonner";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { useJsonPositionMap } from "@/hooks/useJsonPositionMap";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const SAMPLE_CALM = {
   "$schema": "https://raw.githubusercontent.com/finos/architecture-as-code/main/calm/draft/2024-04/meta/core.json",
@@ -317,8 +316,40 @@ const Index = () => {
   const [selectedGithubFile, setSelectedGithubFile] = useState<string | undefined>();
   const [githubService, setGithubService] = useState<GitHubService | null>(null);
 
+  // Collapsible panel state
+  const [isGithubCollapsed, setIsGithubCollapsed] = useState(false);
+  const [isEditorCollapsed, setIsEditorCollapsed] = useState(false);
+  const [isMetadataCollapsed, setIsMetadataCollapsed] = useState(false);
+  const [editorSizeBeforeCollapse, setEditorSizeBeforeCollapse] = useState(40);
+
   // Build position map for jump-to-definition
   const positionMap = useJsonPositionMap(jsonContent);
+
+  // Load collapsed states from localStorage on mount
+  useEffect(() => {
+    const savedGithubCollapsed = localStorage.getItem('panel-github-collapsed');
+    const savedEditorCollapsed = localStorage.getItem('panel-editor-collapsed');
+    const savedMetadataCollapsed = localStorage.getItem('panel-metadata-collapsed');
+    const savedEditorSize = localStorage.getItem('panel-editor-size');
+
+    if (savedGithubCollapsed !== null) setIsGithubCollapsed(savedGithubCollapsed === 'true');
+    if (savedEditorCollapsed !== null) setIsEditorCollapsed(savedEditorCollapsed === 'true');
+    if (savedMetadataCollapsed !== null) setIsMetadataCollapsed(savedMetadataCollapsed === 'true');
+    if (savedEditorSize !== null) setEditorSizeBeforeCollapse(Number(savedEditorSize));
+  }, []);
+
+  // Save collapsed states to localStorage
+  useEffect(() => {
+    localStorage.setItem('panel-github-collapsed', String(isGithubCollapsed));
+  }, [isGithubCollapsed]);
+
+  useEffect(() => {
+    localStorage.setItem('panel-editor-collapsed', String(isEditorCollapsed));
+  }, [isEditorCollapsed]);
+
+  useEffect(() => {
+    localStorage.setItem('panel-metadata-collapsed', String(isMetadataCollapsed));
+  }, [isMetadataCollapsed]);
 
   const handleJsonChange = (value: string) => {
     setJsonContent(value);
@@ -344,6 +375,11 @@ const Index = () => {
 
   const jumpToDefinition = useCallback((id: string, type: 'node' | 'relationship') => {
     console.log('jumpToDefinition called:', { id, type, hasEditor: !!editorRef.current });
+
+    // Auto-expand editor if collapsed
+    if (isEditorCollapsed) {
+      setIsEditorCollapsed(false);
+    }
 
     if (!editorRef.current) {
       console.warn('Editor not ready');
@@ -417,7 +453,7 @@ const Index = () => {
         decorationsRef.current = [];
       }
     }, 3000);
-  }, [positionMap]);
+  }, [positionMap, isEditorCollapsed]);
 
   const handleNodeClick = useCallback((node: any) => {
     console.log('handleNodeClick called:', node);
@@ -581,6 +617,8 @@ const Index = () => {
   const breadcrumbs = historyStack.map(level => level.name);
   const currentArchitectureName = parsedData?.metadata?.name;
 
+  const hasGithub = githubRepo && githubFiles.length > 0;
+
   return (
     <div className="h-screen bg-background flex flex-col">
       <Header onConnectGitHub={() => setShowGitHubDialog(true)} />
@@ -598,15 +636,21 @@ const Index = () => {
       />
 
       <main className="flex-1 flex flex-col overflow-hidden min-h-0">
-        <div className="flex-1 w-full p-6 overflow-hidden min-h-0">
+        <div className="flex-1 w-full overflow-hidden min-h-0">
           <ResizablePanelGroup direction="vertical" className="h-full">
-            {/* Top Row: GitHub Browser (if connected) + Editor + Graph/NodeDetails */}
-            <ResizablePanel defaultSize={hasMetadata ? 60 : 100} minSize={30}>
+            {/* Main content area */}
+            <ResizablePanel defaultSize={hasMetadata && !isMetadataCollapsed ? 70 : 100} minSize={30}>
               <ResizablePanelGroup direction="horizontal">
-                {githubRepo && githubFiles.length > 0 && (
+                {/* GitHub File Browser - Collapsible Left Panel */}
+                {hasGithub && !isGithubCollapsed && (
                   <>
-                    <ResizablePanel defaultSize={20} minSize={15} maxSize={30}>
-                      <div className="h-full pr-3 pb-3">
+                    <ResizablePanel defaultSize={20} minSize={15} maxSize={35}>
+                      <CollapsiblePanel
+                        isCollapsed={false}
+                        onToggle={() => setIsGithubCollapsed(true)}
+                        position="left"
+                        title="GitHub Files"
+                      >
                         <GitHubFileBrowser
                           owner={githubRepo.owner}
                           repo={githubRepo.repo}
@@ -615,26 +659,75 @@ const Index = () => {
                           onFileSelect={handleGitHubFileSelect}
                           onClose={handleCloseGitHub}
                         />
-                      </div>
+                      </CollapsiblePanel>
                     </ResizablePanel>
                     <ResizableHandle withHandle />
                   </>
                 )}
-                <ResizablePanel defaultSize={githubRepo ? 40 : 50} minSize={30}>
-                  <div className="h-full pr-3 pb-3">
-                    <JsonEditor
-                      value={jsonContent}
-                      onChange={handleJsonChange}
-                      onFileUpload={handleFileUpload}
-                      onEditorReady={(editor) => (editorRef.current = editor)}
-                    />
-                  </div>
-                </ResizablePanel>
 
-                <ResizableHandle withHandle />
+                {hasGithub && isGithubCollapsed && (
+                  <>
+                    <div style={{ width: '48px' }}>
+                      <CollapsiblePanel
+                        isCollapsed={true}
+                        onToggle={() => setIsGithubCollapsed(false)}
+                        position="left"
+                        title="GitHub"
+                      >
+                        <div />
+                      </CollapsiblePanel>
+                    </div>
+                  </>
+                )}
 
-                <ResizablePanel defaultSize={githubRepo ? 40 : 50} minSize={30}>
-                  <div className="h-full pl-3 pb-3">
+                {/* JSON Editor - Collapsible Center-Left Panel */}
+                {!isEditorCollapsed && (
+                  <>
+                    <ResizablePanel
+                      defaultSize={editorSizeBeforeCollapse}
+                      minSize={25}
+                      maxSize={60}
+                      onResize={(size) => {
+                        setEditorSizeBeforeCollapse(size);
+                        localStorage.setItem('panel-editor-size', String(size));
+                      }}
+                    >
+                      <CollapsiblePanel
+                        isCollapsed={false}
+                        onToggle={() => setIsEditorCollapsed(true)}
+                        position="left"
+                        title="JSON Editor"
+                      >
+                        <JsonEditor
+                          value={jsonContent}
+                          onChange={handleJsonChange}
+                          onFileUpload={handleFileUpload}
+                          onEditorReady={(editor) => (editorRef.current = editor)}
+                        />
+                      </CollapsiblePanel>
+                    </ResizablePanel>
+                    <ResizableHandle withHandle />
+                  </>
+                )}
+
+                {isEditorCollapsed && (
+                  <>
+                    <div style={{ width: '48px' }}>
+                      <CollapsiblePanel
+                        isCollapsed={true}
+                        onToggle={() => setIsEditorCollapsed(false)}
+                        position="left"
+                        title="JSON"
+                      >
+                        <div />
+                      </CollapsiblePanel>
+                    </div>
+                  </>
+                )}
+
+                {/* Graph Visualization - Always visible, takes remaining space */}
+                <ResizablePanel defaultSize={100} minSize={30}>
+                  <div className="h-full p-6">
                     {selectedNode ? (
                       <NodeDetails
                         node={selectedNode}
@@ -653,41 +746,40 @@ const Index = () => {
               </ResizablePanelGroup>
             </ResizablePanel>
 
-            {/* Bottom Row: Flows + Controls (only if metadata exists) */}
-            {hasMetadata && (
+            {/* Bottom Panel: Flows + Controls - Collapsible */}
+            {hasMetadata && !isMetadataCollapsed && (
               <>
                 <ResizableHandle withHandle />
-                <ResizablePanel defaultSize={40} minSize={20}>
-                  <ResizablePanelGroup direction="horizontal">
-                    {hasFlows && (
-                      <ResizablePanel defaultSize={hasControls ? 50 : 100} minSize={30}>
-                        <div className="h-full pr-3 pt-3">
-                          <FlowsPanel
-                            flows={flows}
-                            onTransitionClick={(relId) => jumpToDefinition(relId, 'relationship')}
-                          />
-                        </div>
-                      </ResizablePanel>
-                    )}
-
-                    {hasFlows && hasControls && <ResizableHandle withHandle />}
-
-                    {hasControls && (
-                      <ResizablePanel defaultSize={hasFlows ? 50 : 100} minSize={30}>
-                        <div className="h-full pl-3 pt-3">
-                          <ControlsPanel
-                            controls={controls}
-                            onNodeClick={(nodeId) => {
-                              const node = parsedData?.nodes?.find((n: any) => n['unique-id'] === nodeId);
-                              if (node) handleNodeClick(node);
-                            }}
-                          />
-                        </div>
-                      </ResizablePanel>
-                    )}
-                  </ResizablePanelGroup>
+                <ResizablePanel defaultSize={30} minSize={15} maxSize={50}>
+                  <MetadataPanel
+                    flows={flows}
+                    controls={controls}
+                    onTransitionClick={(relId) => jumpToDefinition(relId, 'relationship')}
+                    onNodeClick={(nodeId) => {
+                      const node = parsedData?.nodes?.find((n: any) => n['unique-id'] === nodeId);
+                      if (node) handleNodeClick(node);
+                    }}
+                    isCollapsed={false}
+                    onToggleCollapse={() => setIsMetadataCollapsed(true)}
+                  />
                 </ResizablePanel>
               </>
+            )}
+
+            {hasMetadata && isMetadataCollapsed && (
+              <div style={{ height: '48px' }}>
+                <MetadataPanel
+                  flows={flows}
+                  controls={controls}
+                  onTransitionClick={(relId) => jumpToDefinition(relId, 'relationship')}
+                  onNodeClick={(nodeId) => {
+                    const node = parsedData?.nodes?.find((n: any) => n['unique-id'] === nodeId);
+                    if (node) handleNodeClick(node);
+                  }}
+                  isCollapsed={true}
+                  onToggleCollapse={() => setIsMetadataCollapsed(false)}
+                />
+              </div>
             )}
           </ResizablePanelGroup>
         </div>
