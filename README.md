@@ -1,73 +1,176 @@
-# Welcome to your Lovable project
+# CALM Visualizer
 
-## Project info
+An interactive visualization tool for [FINOS CALM](https://github.com/finos/architecture-as-code) (Common Architecture Language Model) architecture diagrams. This tool provides a real-time graph visualization with an integrated JSON editor, enabling users to explore and understand software architecture definitions with support for AI Governance Framework (AIGF) risk annotations.
 
-**URL**: https://lovable.dev/projects/9cb54361-6823-44be-aa17-abc6ac1ed916
+## Features
 
-## How can I edit this code?
+- **Interactive Graph Visualization**: Auto-layouted architecture diagrams using ReactFlow and Dagre
+- **JSON Editor**: Built-in Monaco editor with syntax highlighting and validation
+- **AIGF Risk Visualization**: Color-coded risk levels, risk/mitigation badges, and governance control annotations
+- **Node Details Panel**: Detailed view of node properties, interfaces, risks, and mitigations
+- **File Import**: Upload and visualize your own CALM JSON files
+- **Responsive Layout**: Resizable panels for optimal workspace management
 
-There are several ways of editing your application.
+## Prerequisites (macOS)
 
-**Use Lovable**
+Before you begin, ensure you have the following installed:
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/9cb54361-6823-44be-aa17-abc6ac1ed916) and start prompting.
+### 1. Install Homebrew
 
-Changes made via Lovable will be committed automatically to this repo.
+If you don't have Homebrew installed, run:
 
-**Use your preferred IDE**
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+```
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### 2. Install Node.js and npm
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+We recommend using Node Version Manager (nvm) for managing Node.js versions:
 
-Follow these steps:
+```bash
+# Install nvm
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+# Close and reopen your terminal, then install Node.js
+nvm install node
+nvm use node
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+# Verify installation
+node --version  # Should show v20 or higher
+npm --version   # Should show v10 or higher
+```
 
-# Step 3: Install the necessary dependencies.
-npm i
+Alternatively, you can install Node.js directly with Homebrew:
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+```bash
+brew install node
+```
+
+## Getting Started
+
+### 1. Clone the Repository
+
+```bash
+git clone <repository-url>
+cd calm-viz-sparkle
+```
+
+### 2. Install Dependencies
+
+```bash
+npm install
+```
+
+### 3. Start Development Server
+
+```bash
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+The application will start on `http://localhost:8080`
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Available Commands
 
-**Use GitHub Codespaces**
+```bash
+# Start development server
+npm run dev
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+# Build for production
+npm run build
 
-## What technologies are used for this project?
+# Build in development mode
+npm run build:dev
 
-This project is built with:
+# Preview production build
+npm run preview
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+# Lint code
+npm run lint
+```
 
-## How can I deploy this project?
+## Usage
 
-Simply open [Lovable](https://lovable.dev/projects/9cb54361-6823-44be-aa17-abc6ac1ed916) and click on Share -> Publish.
+1. **Load Architecture**: The app starts with a demo CALM architecture (karl.json)
+2. **Edit JSON**: Use the left panel to edit or paste your CALM JSON
+3. **Upload File**: Click the upload button to load a local CALM JSON file
+4. **Download**: Export your current architecture as a JSON file
+5. **Explore Graph**: Click and drag to pan, scroll to zoom, click nodes to view details
+6. **View Details**: Click any node to see detailed information including AIGF risks and mitigations
 
-## Can I connect a custom domain to my Lovable project?
+## CALM JSON Format
 
-Yes, you can!
+The visualizer expects CALM-compliant JSON with this structure:
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+```json
+{
+  "nodes": [
+    {
+      "unique-id": "node-id",
+      "name": "Node Name",
+      "node-type": "system",
+      "description": "Description",
+      "interfaces": [...],
+      "risks": [...],
+      "mitigations": [...]
+    }
+  ],
+  "relationships": [
+    {
+      "unique-id": "rel-id",
+      "relationship-type": {
+        "connects": {
+          "source": { "node": "source-id", "interface": "interface-id" },
+          "destination": { "node": "dest-id", "interface": "interface-id" }
+        }
+      },
+      "protocol": "HTTPS",
+      "controls": [...]
+    }
+  ]
+}
+```
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+See the included `karl.json` example file for a complete AIGF-enhanced architecture.
+
+## Technology Stack
+
+- **React 18** - UI framework
+- **TypeScript** - Type-safe development
+- **Vite** - Build tool and dev server
+- **ReactFlow** - Graph visualization
+- **Dagre** - Graph layout algorithm
+- **Monaco Editor** - Code editor component
+- **Tailwind CSS** - Styling
+- **shadcn/ui** - UI component library
+- **React Query** - Data fetching and state management
+
+## Project Structure
+
+```
+src/
+├── components/
+│   ├── ArchitectureGraph.tsx  # Main graph visualization
+│   ├── JsonEditor.tsx          # Monaco JSON editor
+│   ├── NodeDetails.tsx         # Node details panel
+│   ├── CustomEdge.tsx          # Custom edge rendering
+│   └── ui/                     # shadcn/ui components
+├── pages/
+│   └── Index.tsx               # Main application page
+├── lib/                        # Utility functions
+└── public/
+    └── karl.json               # Example CALM architecture
+```
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit issues or pull requests.
+
+## License
+
+[Include your license information here]
+
+## Resources
+
+- [FINOS CALM Specification](https://github.com/finos/architecture-as-code)
+- [FINOS AI Governance Framework](https://github.com/finos/architecture-as-code/tree/main/calm/aigf)
+- [ReactFlow Documentation](https://reactflow.dev/)
