@@ -90,12 +90,12 @@ npm run lint
 
 ## Usage
 
-1. **Load Architecture**: The app starts with a demo CALM architecture (karl.json)
+1. **Load Architecture**: The app starts with a demo CALM architecture
 2. **Edit JSON**: Use the left panel to edit or paste your CALM JSON
 3. **Upload File**: Click the upload button to load a local CALM JSON file
 4. **Download**: Export your current architecture as a JSON file
 5. **Explore Graph**: Click and drag to pan, scroll to zoom, click nodes to view details
-6. **View Details**: Click any node to see detailed information including AIGF risks and mitigations
+6. **View Details**: Click any node to see detailed information, including AIGF risks and mitigations
 
 ## CALM JSON Format
 
