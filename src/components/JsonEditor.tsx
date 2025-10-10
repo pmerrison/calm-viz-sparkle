@@ -1,8 +1,9 @@
 import { Editor } from "@monaco-editor/react";
 import { Card } from "./ui/card";
-import { Upload, FileText } from "lucide-react";
+import { Upload, FileText, Download } from "lucide-react";
 import { Button } from "./ui/button";
 import { useRef, useEffect } from "react";
+import { toast } from "sonner";
 
 interface JsonEditorProps {
   value: string;
@@ -38,6 +39,32 @@ export const JsonEditor = ({ value, onChange, onFileUpload, onEditorReady }: Jso
     }
   };
 
+  const handleDownload = () => {
+    try {
+      // Validate JSON before downloading
+      JSON.parse(value);
+
+      // Create blob and download
+      const blob = new Blob([value], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+
+      // Generate filename with timestamp
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+      a.download = `calm-architecture-${timestamp}.json`;
+
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      toast.success('JSON downloaded successfully');
+    } catch (error) {
+      toast.error('Cannot download: Invalid JSON format');
+    }
+  };
+
   return (
     <Card className="h-full flex flex-col overflow-hidden border-border bg-card">
       <div className="flex items-center justify-between p-4 border-b border-border">
@@ -61,6 +88,15 @@ export const JsonEditor = ({ value, onChange, onFileUpload, onEditorReady }: Jso
           >
             <Upload className="w-4 h-4" />
             Upload
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleDownload}
+            className="gap-2"
+          >
+            <Download className="w-4 h-4" />
+            Download
           </Button>
         </div>
       </div>
