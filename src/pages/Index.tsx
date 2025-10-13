@@ -93,7 +93,7 @@ const Index = () => {
     }
   };
 
-  const jumpToDefinition = useCallback((id: string, type: 'node' | 'relationship' | 'control') => {
+  const jumpToDefinition = useCallback((id: string, type: 'node' | 'relationship' | 'control' | 'interface') => {
     console.log('jumpToDefinition called:', { id, type, hasEditor: !!editorRef.current });
 
     // Auto-expand editor if collapsed
@@ -110,7 +110,9 @@ const Index = () => {
       ? positionMap.nodes.get(id)
       : type === 'relationship'
         ? positionMap.relationships.get(id)
-        : positionMap.controls.get(id);
+        : type === 'interface'
+          ? positionMap.interfaces.get(id)
+          : positionMap.controls.get(id);
 
     if (!location) {
       console.warn(`No position found for ${type} with id: ${id}`);
@@ -554,6 +556,8 @@ const Index = () => {
               node={selectedNode}
               onClose={() => setSelectedNode(null)}
               onLoadDetailedArchitecture={handleLoadDetailedArchitecture}
+              onJumpToControl={(controlId) => jumpToDefinition(controlId, 'control')}
+              onJumpToInterface={(interfaceId) => jumpToDefinition(interfaceId, 'interface')}
             />
           )}
         </SheetContent>

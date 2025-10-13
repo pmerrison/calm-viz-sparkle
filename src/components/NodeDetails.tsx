@@ -5,9 +5,11 @@ interface NodeDetailsProps {
   node: any;
   onClose: () => void;
   onLoadDetailedArchitecture?: (url: string, nodeName?: string) => void;
+  onJumpToControl?: (controlId: string) => void;
+  onJumpToInterface?: (interfaceId: string) => void;
 }
 
-export const NodeDetails = ({ node, onClose, onLoadDetailedArchitecture }: NodeDetailsProps) => {
+export const NodeDetails = ({ node, onClose, onLoadDetailedArchitecture, onJumpToControl, onJumpToInterface }: NodeDetailsProps) => {
   if (!node) return null;
 
   // Extract AIGF data
@@ -40,8 +42,15 @@ export const NodeDetails = ({ node, onClose, onLoadDetailedArchitecture }: NodeD
     return String(value);
   };
 
-  // Filter out metadata.aigf, interfaces, details, and controls from general properties since we'll show them specially
-  const otherProperties = Object.entries(node).filter(([key]) => key !== 'metadata' && key !== 'interfaces' && key !== 'details' && key !== 'controls');
+  // Filter out metadata.aigf, interfaces, details, controls, and internal implementation details from general properties since we'll show them specially
+  const otherProperties = Object.entries(node).filter(([key]) =>
+    key !== 'metadata' &&
+    key !== 'interfaces' &&
+    key !== 'details' &&
+    key !== 'controls' &&
+    key !== 'onShowDetails' &&
+    key !== 'onJumpToControl'
+  );
   const otherMetadata = node.metadata ? Object.entries(node.metadata).filter(([key]) => key !== 'aigf') : [];
   const interfaces = node.interfaces || [];
   const controls = node.controls || {};
@@ -130,15 +139,25 @@ export const NodeDetails = ({ node, onClose, onLoadDetailedArchitecture }: NodeD
                 Interfaces
               </h3>
               <div className="space-y-2">
-                {interfaces.map((iface: any, idx: number) => (
-                  <div key={idx} className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
-                    <div className="space-y-2">
-                      {iface['unique-id'] && (
-                        <div>
-                          <span className="text-xs font-medium text-muted-foreground">ID: </span>
-                          <span className="text-sm font-mono text-blue-600 dark:text-blue-400">{iface['unique-id']}</span>
-                        </div>
-                      )}
+                {interfaces.map((iface: any, idx: number) => {
+                  const interfaceId = iface['unique-id'] || iface.unique_id || iface.id;
+                  const nodeId = node['unique-id'] || node.unique_id || node.id;
+                  const interfaceKey = interfaceId ? `${nodeId}/${interfaceId}` : null;
+
+                  return (
+                    <div
+                      key={idx}
+                      className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20 hover:border-blue-500/40 transition-colors cursor-pointer"
+                      onClick={() => interfaceKey && onJumpToInterface?.(interfaceKey)}
+                      title="Click to jump to interface definition in JSON"
+                    >
+                      <div className="space-y-2">
+                        {iface['unique-id'] && (
+                          <div>
+                            <span className="text-xs font-medium text-muted-foreground">ID: </span>
+                            <span className="text-sm font-mono text-blue-600 dark:text-blue-400">{iface['unique-id']}</span>
+                          </div>
+                        )}
                       {iface['definition-url'] && (
                         <div>
                           <span className="text-xs font-medium text-muted-foreground">Definition: </span>
@@ -161,8 +180,9 @@ export const NodeDetails = ({ node, onClose, onLoadDetailedArchitecture }: NodeD
                         </div>
                       )}
                     </div>
-                  </div>
-                ))}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -175,9 +195,19 @@ export const NodeDetails = ({ node, onClose, onLoadDetailedArchitecture }: NodeD
                 Controls
               </h3>
               <div className="space-y-3">
-                {controlEntries.map(([controlId, control]: [string, any], idx: number) => (
-                  <div key={idx} className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
-                    <div className="text-sm font-bold text-blue-600 dark:text-blue-400 mb-2">{controlId}</div>
+                {controlEntries.map(([controlId, control]: [string, any], idx: number) => {
+                  const nodeId = node['unique-id'] || node.unique_id || node.id;
+                  const controlKey = `${nodeId}/${controlId}`;
+
+                  return (
+                    <div key={idx} className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                      <div
+                        className="text-sm font-bold text-blue-600 dark:text-blue-400 mb-2 cursor-pointer hover:underline"
+                        onClick={() => onJumpToControl?.(controlKey)}
+                        title="Click to jump to control definition in JSON"
+                      >
+                        {controlId}
+                      </div>
                     {control.description && (
                       <div className="text-sm text-foreground/90 mb-3">{control.description}</div>
                     )}
@@ -219,7 +249,8 @@ export const NodeDetails = ({ node, onClose, onLoadDetailedArchitecture }: NodeD
                       </div>
                     )}
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}

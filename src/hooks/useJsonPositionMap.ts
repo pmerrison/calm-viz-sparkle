@@ -18,7 +18,8 @@ export interface SourceLocation {
 export interface PositionMap {
   nodes: Map<string, SourceLocation>;
   relationships: Map<string, SourceLocation>;
-  controls: Map<string, SourceLocation>; // Key format: "nodeId/controlId"
+  controls: Map<string, SourceLocation>; // Key format: "nodeId/controlId" or "relationshipId/controlId"
+  interfaces: Map<string, SourceLocation>; // Key format: "nodeId/interfaceId"
 }
 
 /**
@@ -30,6 +31,7 @@ export const useJsonPositionMap = (jsonString: string): PositionMap => {
       nodes: new Map(),
       relationships: new Map(),
       controls: new Map(),
+      interfaces: new Map(),
     };
 
     try {
@@ -57,6 +59,22 @@ export const useJsonPositionMap = (jsonString: string): PositionMap => {
                 if (controlLocation) {
                   const key = `${nodeId}/${controlId}`;
                   map.controls.set(key, controlLocation);
+                }
+              });
+            }
+
+            // Map interfaces within this node
+            if (node.interfaces && Array.isArray(node.interfaces)) {
+              node.interfaces.forEach((iface: any, ifaceIndex: number) => {
+                const interfaceId = iface['unique-id'] || iface.unique_id || iface.id;
+                if (interfaceId) {
+                  const interfacePointer = `/nodes/${index}/interfaces/${ifaceIndex}`;
+                  const interfaceLocation = pointers[interfacePointer];
+
+                  if (interfaceLocation) {
+                    const key = `${nodeId}/${interfaceId}`;
+                    map.interfaces.set(key, interfaceLocation);
+                  }
                 }
               });
             }
