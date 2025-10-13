@@ -110,8 +110,19 @@ The visualizer expects CALM-compliant JSON with this structure:
       "node-type": "system",
       "description": "Description",
       "interfaces": [...],
-      "risks": [...],
-      "mitigations": [...]
+      "controls": {
+        "control-id": {
+          "description": "Control description",
+          "requirements": [
+            {
+              "requirement-url": "https://example.com/requirement",
+              "config": {
+                "key": "value"
+              }
+            }
+          ]
+        }
+      }
     }
   ],
   "relationships": [
@@ -124,13 +135,32 @@ The visualizer expects CALM-compliant JSON with this structure:
         }
       },
       "protocol": "HTTPS",
-      "controls": [...]
+      "controls": {
+        "control-id": {
+          "description": "Control description",
+          "requirements": [...]
+        }
+      }
+    }
+  ],
+  "flows": [
+    {
+      "unique-id": "flow-id",
+      "name": "Flow Name",
+      "description": "Flow description",
+      "transitions": [...],
+      "controls": {
+        "control-id": {
+          "description": "Control description",
+          "requirements": [...]
+        }
+      }
     }
   ]
 }
 ```
 
-See the included `calm-example.json` example file for a complete AIGF-enhanced architecture.
+See the included `calm-example.json` file for a complete architecture with FINOS AIGF controls.
 
 ## Technology Stack
 

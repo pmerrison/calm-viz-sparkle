@@ -82,11 +82,6 @@ export const ArchitectureGraph = ({ jsonData, onNodeClick, onEdgeClick, onJumpTo
     const systemNodes: Node[] = [];
     const deploymentMap: Record<string, string[]> = {}; // systemId -> [childNodeIds]
 
-    // Extract top-level AIGF metadata for lookups
-    const aigfMetadata = data.metadata?.['aigf-governance'] || {};
-    const allRisks = aigfMetadata.risks || [];
-    const allMitigations = aigfMetadata.mitigations || [];
-
     try {
       // Parse nodes from CALM structure - handle both array and object formats
       const nodesData = data.nodes || [];
@@ -121,7 +116,6 @@ export const ArchitectureGraph = ({ jsonData, onNodeClick, onEdgeClick, onJumpTo
                 data: {
                   label: node.name || id,
                   ...node,
-                  _aigfLookup: { risks: allRisks, mitigations: allMitigations },
                   onShowDetails: onShowDetailsCallback,
                   onJumpToControl: onJumpToControlCallback
                 },
@@ -158,7 +152,6 @@ export const ArchitectureGraph = ({ jsonData, onNodeClick, onEdgeClick, onJumpTo
               data: {
                 label: (node as any).name || (node as any).unique_id || id,
                 ...node,
-                _aigfLookup: { risks: allRisks, mitigations: allMitigations },
                 onShowDetails: onShowDetailsCallback,
                 onJumpToControl: onJumpToControlCallback
               },
