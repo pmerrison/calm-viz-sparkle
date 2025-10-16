@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
 import { Shield, AlertTriangle, AlertCircle, User, Globe, Box, Cog, Database, Network, Users, Globe2, FileText, ZoomIn, Info } from 'lucide-react';
 
-export const CustomNode = ({ data }: NodeProps) => {
+export const CustomNode = ({ data, id }: NodeProps) => {
   const [isHovered, setIsHovered] = useState(false);
 
   // Get callbacks from data
@@ -97,6 +97,7 @@ export const CustomNode = ({ data }: NodeProps) => {
       }}
     >
       <Handle type="target" position={Position.Left} />
+      <Handle type="source" position={Position.Right} />
 
       <div className="flex items-start justify-between gap-2">
         <div className="font-semibold mb-1 flex-1 flex items-center gap-2">
@@ -227,8 +228,6 @@ export const CustomNode = ({ data }: NodeProps) => {
           )}
         </div>
       )}
-
-      <Handle type="source" position={Position.Right} />
     </div>
   );
 };

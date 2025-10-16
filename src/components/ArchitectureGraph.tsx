@@ -36,11 +36,12 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[]) => {
 
   dagreGraph.setGraph({
     rankdir: 'LR',
-    ranksep: 150,
-    nodesep: 180, // Increased from 100 to accommodate node expansion on hover
-    edgesep: 50,
+    ranksep: 200, // Increased to prevent edges routing below nodes
+    nodesep: 80, // Decreased to keep nodes closer vertically
+    edgesep: 30,
     marginx: 50,
-    marginy: 50
+    marginy: 50,
+    ranker: 'longest-path' // Use longest-path ranker for better alignment
   });
 
   nodes.forEach((node) => {
@@ -118,9 +119,7 @@ export const ArchitectureGraph = ({ jsonData, onNodeClick, onEdgeClick, onJumpTo
                   ...node,
                   onShowDetails: onShowDetailsCallback,
                   onJumpToControl: onJumpToControlCallback
-                },
-                sourcePosition: Position.Right,
-                targetPosition: Position.Left,
+                }
               });
             }
           }
@@ -154,13 +153,31 @@ export const ArchitectureGraph = ({ jsonData, onNodeClick, onEdgeClick, onJumpTo
                 ...node,
                 onShowDetails: onShowDetailsCallback,
                 onJumpToControl: onJumpToControlCallback
-              },
-              sourcePosition: Position.Right,
-              targetPosition: Position.Left,
+              }
             });
           }
         });
       }
+
+      // Parse flows to identify bidirectional relationships
+      const flows = data.flows || [];
+      const flowTransitions = new Map<string, Array<{sequence: number, direction: string, description: string, flowName: string}>>();
+
+      flows.forEach((flow: any) => {
+        const flowName = flow.name || 'Unnamed Flow';
+        const transitions = flow.transitions || [];
+        transitions.forEach((transition: any) => {
+          const relId = transition['relationship-unique-id'];
+          const direction = transition.direction || 'source-to-destination';
+          const sequence = transition['sequence-number'] || transition.sequence_number || 0;
+          const description = transition.description || '';
+
+          if (!flowTransitions.has(relId)) {
+            flowTransitions.set(relId, []);
+          }
+          flowTransitions.get(relId)!.push({ sequence, direction, description, flowName });
+        });
+      });
 
       // Parse relationships/edges - handle FINOS CALM nested format
       const relationships = data.relationships || [];
@@ -217,31 +234,107 @@ export const ArchitectureGraph = ({ jsonData, onNodeClick, onEdgeClick, onJumpTo
           const sourceId = connects.source?.node;
           const targetId = connects.destination?.node;
           const label = rel.description || rel.protocol || "";
+          const relId = rel['unique-id'] || rel.unique_id || rel.id;
 
           if (sourceId && targetId) {
-            newEdges.push({
-              id: `edge-${index}`,
-              source: sourceId,
-              target: targetId,
-              type: "custom",
-              animated: true,
-              style: {
-                stroke: "hsl(var(--accent))",
-                strokeWidth: 2.5
-              },
-              markerEnd: {
-                type: MarkerType.ArrowClosed,
-                color: "hsl(var(--accent))",
-                width: 25,
-                height: 25,
-              },
-              data: {
-                description: label,
-                protocol: rel.protocol || "",
-                metadata: rel.metadata || {},
-                'unique-id': rel['unique-id'] || rel.unique_id || rel.id
-              }
-            });
+            // Check if this relationship has flow transitions
+            const transitions = flowTransitions.get(relId) || [];
+
+            // Group transitions by direction
+            const forwardTransitions = transitions.filter(t => t.direction === 'source-to-destination');
+            const backwardTransitions = transitions.filter(t => t.direction === 'destination-to-source');
+
+            // If we have bidirectional flow, create two parallel edges (both same direction)
+            if (forwardTransitions.length > 0 && backwardTransitions.length > 0) {
+              // Forward edge (request) - solid line with arrow
+              // Store edge data, positions will be calculated after layout
+              newEdges.push({
+                id: `edge-${index}-forward`,
+                source: sourceId,
+                target: targetId,
+                type: "custom",
+                animated: true,
+                style: {
+                  stroke: "hsl(var(--accent))",
+                  strokeWidth: 2.5
+                },
+                markerEnd: {
+                  type: MarkerType.ArrowClosed,
+                  color: "hsl(var(--accent))",
+                  width: 25,
+                  height: 25,
+                },
+                data: {
+                  description: label,
+                  protocol: rel.protocol || "",
+                  metadata: rel.metadata || {},
+                  'unique-id': relId,
+                  flowTransitions: forwardTransitions,
+                  direction: 'forward',
+                  controls: rel.controls
+                }
+              });
+
+              // Backward edge (response) - dashed line with arrow pointing BACK to source
+              // Store edge data, positions will be calculated after layout
+              newEdges.push({
+                id: `edge-${index}-backward`,
+                source: sourceId,
+                target: targetId,
+                type: "custom",
+                animated: true,
+                style: {
+                  stroke: "hsl(280 75% 60%)", // Purple for return flow
+                  strokeWidth: 2.5,
+                  strokeDasharray: "5,5", // Dashed to distinguish from request
+                  animationDirection: 'reverse' // Reverse the animation direction
+                },
+                markerStart: {
+                  type: MarkerType.ArrowClosed,
+                  color: "hsl(280 75% 60%)",
+                  width: 25,
+                  height: 25,
+                  orient: 'auto-start-reverse' as any
+                },
+                data: {
+                  description: label,
+                  protocol: rel.protocol || "",
+                  metadata: rel.metadata || {},
+                  'unique-id': relId,
+                  flowTransitions: backwardTransitions,
+                  direction: 'backward',
+                  controls: rel.controls
+                }
+              });
+            }
+            // Single direction - create one edge
+            else {
+              newEdges.push({
+                id: `edge-${index}`,
+                source: sourceId,
+                target: targetId,
+                type: "custom",
+                animated: true,
+                style: {
+                  stroke: "hsl(var(--accent))",
+                  strokeWidth: 2.5
+                },
+                markerEnd: {
+                  type: MarkerType.ArrowClosed,
+                  color: "hsl(var(--accent))",
+                  width: 25,
+                  height: 25,
+                },
+                data: {
+                  description: label,
+                  protocol: rel.protocol || "",
+                  metadata: rel.metadata || {},
+                  'unique-id': relId,
+                  flowTransitions: transitions,
+                  controls: rel.controls
+                }
+              });
+            }
           }
         }
         // Fallback to simple formats
