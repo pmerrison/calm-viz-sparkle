@@ -15,7 +15,7 @@ import "reactflow/dist/style.css";
 import { Card } from "./ui/card";
 import { Network, AlertCircle, ExternalLink, FileText } from "lucide-react";
 import { Alert, AlertDescription } from "./ui/alert";
-import { CustomEdge } from "./CustomEdge";
+import { FloatingEdge } from "./FloatingEdge";
 import { CustomNode } from "./CustomNode";
 import { SystemGroupNode } from "./SystemGroupNode";
 
@@ -72,7 +72,7 @@ export const ArchitectureGraph = ({ jsonData, onNodeClick, onEdgeClick, onJumpTo
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 
-  const edgeTypes = useMemo(() => ({ custom: CustomEdge }), []);
+  const edgeTypes = useMemo(() => ({ custom: FloatingEdge }), []);
   const nodeTypes = useMemo(() => ({ custom: CustomNode, group: SystemGroupNode }), []);
 
   const parseCALMData = useCallback((data: any, onShowDetailsCallback?: (nodeData: any) => void, onJumpToControlCallback?: (controlId: string) => void) => {

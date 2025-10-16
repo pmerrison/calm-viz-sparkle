@@ -122,8 +122,8 @@ const Index = () => {
     const editor = editorRef.current;
 
     // json-source-map returns { value, valueEnd } or just { line, column, pos }
-    const start = location.value || location.start || location;
-    const end = location.valueEnd || location.end || location;
+    const start = (location as any).value || (location as any).start || location;
+    const end = (location as any).valueEnd || (location as any).end || location;
 
     if (!start || typeof start.line !== 'number') {
       console.warn(`Invalid location structure for ${type} with id: ${id}`, location);

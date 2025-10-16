@@ -96,15 +96,20 @@ export const CustomNode = ({ data, id }: NodeProps) => {
         boxShadow: isHovered ? `0 10px 30px -10px ${getBorderColor()} / 0.3` : "none",
       }}
     >
-      <Handle type="target" position={Position.Left} />
-      <Handle type="source" position={Position.Right} />
+      {/* Add handles on all four sides for floating edges */}
+      <Handle type="source" position={Position.Top} id="top" style={{ opacity: 0 }} />
+      <Handle type="source" position={Position.Right} id="right" style={{ opacity: 0 }} />
+      <Handle type="source" position={Position.Bottom} id="bottom" style={{ opacity: 0 }} />
+      <Handle type="source" position={Position.Left} id="left" style={{ opacity: 0 }} />
 
       <div className="flex items-start justify-between gap-2">
         <div className="font-semibold mb-1 flex-1 flex items-center gap-2">
           <NodeIcon className="w-4 h-4 flex-shrink-0" style={{ color: nodeTypeStyle.color }} />
           <span>{data.label}</span>
           {detailedArchitecture && (
-            <ZoomIn className="w-3.5 h-3.5 flex-shrink-0 text-blue-600 dark:text-blue-400" title="Has detailed architecture" />
+            <div title="Has detailed architecture">
+              <ZoomIn className="w-3.5 h-3.5 flex-shrink-0 text-blue-600 dark:text-blue-400" />
+            </div>
           )}
         </div>
         {(riskCount > 0 || mitigationCount > 0 || controlCount > 0) && (
