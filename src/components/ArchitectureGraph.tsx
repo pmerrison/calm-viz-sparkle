@@ -205,6 +205,8 @@ export const ArchitectureGraph = ({ jsonData, onNodeClick, onEdgeClick, onJumpTo
               id: `edge-${index}-${targetIndex}`,
               source: actorId,
               target: targetId,
+              sourceHandle: 'source',
+              targetHandle: 'target',
               type: "custom",
               animated: false, // Non-animated to distinguish from connects
               style: {
@@ -252,6 +254,8 @@ export const ArchitectureGraph = ({ jsonData, onNodeClick, onEdgeClick, onJumpTo
                 id: `edge-${index}-forward`,
                 source: sourceId,
                 target: targetId,
+                sourceHandle: 'source',
+                targetHandle: 'target',
                 type: "custom",
                 animated: true,
                 style: {
@@ -281,6 +285,8 @@ export const ArchitectureGraph = ({ jsonData, onNodeClick, onEdgeClick, onJumpTo
                 id: `edge-${index}-backward`,
                 source: sourceId,
                 target: targetId,
+                sourceHandle: 'source',
+                targetHandle: 'target',
                 type: "custom",
                 animated: true,
                 style: {
@@ -313,6 +319,8 @@ export const ArchitectureGraph = ({ jsonData, onNodeClick, onEdgeClick, onJumpTo
                 id: `edge-${index}`,
                 source: sourceId,
                 target: targetId,
+                sourceHandle: 'source',
+                targetHandle: 'target',
                 type: "custom",
                 animated: true,
                 style: {
@@ -348,6 +356,8 @@ export const ArchitectureGraph = ({ jsonData, onNodeClick, onEdgeClick, onJumpTo
               id: `edge-${index}`,
               source: sourceId,
               target: targetId,
+              sourceHandle: 'source',
+              targetHandle: 'target',
               type: "custom",
               animated: true,
               style: {

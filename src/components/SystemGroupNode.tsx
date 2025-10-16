@@ -15,8 +15,8 @@ export const SystemGroupNode = ({ data }: NodeProps) => {
       }}
     >
       {/* Hidden handles to satisfy React Flow; floating edge computes actual attachment */}
-      <Handle type="source" position={Position.Right} style={{ opacity: 0, pointerEvents: 'all' }} />
-      <Handle type="target" position={Position.Left} style={{ opacity: 0, pointerEvents: 'all' }} />
+      <Handle type="source" position={Position.Right} id="source" style={{ opacity: 0, pointerEvents: 'all' }} />
+      <Handle type="target" position={Position.Left} id="target" style={{ opacity: 0, pointerEvents: 'all' }} />
       <div
         className="absolute top-3 left-4 px-3 py-1 rounded-md font-semibold text-xs"
         style={{

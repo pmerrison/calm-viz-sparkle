@@ -97,8 +97,8 @@ export const CustomNode = ({ data, id }: NodeProps) => {
       }}
     >
       {/* Hidden handles to satisfy React Flow; floating edge computes actual attachment */}
-      <Handle type="source" position={Position.Right} style={{ opacity: 0 }} />
-      <Handle type="target" position={Position.Left} style={{ opacity: 0 }} />
+      <Handle type="source" position={Position.Right} id="source" style={{ opacity: 0 }} />
+      <Handle type="target" position={Position.Left} id="target" style={{ opacity: 0 }} />
 
       <div className="flex items-start justify-between gap-2">
         <div className="font-semibold mb-1 flex-1 flex items-center gap-2">
