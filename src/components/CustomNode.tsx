@@ -96,11 +96,9 @@ export const CustomNode = ({ data, id }: NodeProps) => {
         boxShadow: isHovered ? `0 10px 30px -10px ${getBorderColor()} / 0.3` : "none",
       }}
     >
-      {/* Add handles on all four sides for floating edges */}
-      <Handle type="source" position={Position.Top} style={{ opacity: 0 }} />
+      {/* Hidden handles to satisfy React Flow; floating edge computes actual attachment */}
       <Handle type="source" position={Position.Right} style={{ opacity: 0 }} />
-      <Handle type="source" position={Position.Bottom} style={{ opacity: 0 }} />
-      <Handle type="source" position={Position.Left} style={{ opacity: 0 }} />
+      <Handle type="target" position={Position.Left} style={{ opacity: 0 }} />
 
       <div className="flex items-start justify-between gap-2">
         <div className="font-semibold mb-1 flex-1 flex items-center gap-2">
