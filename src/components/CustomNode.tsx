@@ -97,10 +97,10 @@ export const CustomNode = ({ data, id }: NodeProps) => {
       }}
     >
       {/* Add handles on all four sides for floating edges */}
-      <Handle type="source" position={Position.Top} id="top" style={{ opacity: 0 }} />
-      <Handle type="source" position={Position.Right} id="right" style={{ opacity: 0 }} />
-      <Handle type="source" position={Position.Bottom} id="bottom" style={{ opacity: 0 }} />
-      <Handle type="source" position={Position.Left} id="left" style={{ opacity: 0 }} />
+      <Handle type="source" position={Position.Top} style={{ opacity: 0 }} />
+      <Handle type="source" position={Position.Right} style={{ opacity: 0 }} />
+      <Handle type="source" position={Position.Bottom} style={{ opacity: 0 }} />
+      <Handle type="source" position={Position.Left} style={{ opacity: 0 }} />
 
       <div className="flex items-start justify-between gap-2">
         <div className="font-semibold mb-1 flex-1 flex items-center gap-2">
