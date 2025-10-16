@@ -422,20 +422,26 @@ export const ArchitectureGraph = ({ jsonData, onNodeClick, onEdgeClick, onJumpTo
           let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
           const nodeWidth = 250;
           const nodeHeight = 100;
-          
+
           layoutedChildren.forEach(child => {
             minX = Math.min(minX, child.position.x);
             minY = Math.min(minY, child.position.y);
             maxX = Math.max(maxX, child.position.x + nodeWidth);
             maxY = Math.max(maxY, child.position.y + nodeHeight);
           });
-          
+
           // Set system dimensions with padding
           const padding = 80;
+          const calculatedWidth = maxX - minX + padding * 2;
+          const calculatedHeight = maxY - minY + padding * 2;
+
+          // Set dimensions both in style (for CSS) and directly on node (for ReactFlow edge calculations)
+          systemNode.width = calculatedWidth;
+          systemNode.height = calculatedHeight;
           systemNode.style = {
             ...systemNode.style,
-            width: maxX - minX + padding * 2,
-            height: maxY - minY + padding * 2,
+            width: calculatedWidth,
+            height: calculatedHeight,
           };
           
           // Update child positions to be relative to system origin with padding
@@ -449,11 +455,17 @@ export const ArchitectureGraph = ({ jsonData, onNodeClick, onEdgeClick, onJumpTo
             }
           });
         } else {
-          // Empty system
+          // Empty system - set default dimensions
+          const defaultWidth = 300;
+          const defaultHeight = 200;
+
+          // Set dimensions both in style (for CSS) and directly on node (for ReactFlow edge calculations)
+          systemNode.width = defaultWidth;
+          systemNode.height = defaultHeight;
           systemNode.style = {
             ...systemNode.style,
-            width: 300,
-            height: 200,
+            width: defaultWidth,
+            height: defaultHeight,
           };
         }
       });
