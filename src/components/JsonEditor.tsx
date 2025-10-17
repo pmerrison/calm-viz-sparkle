@@ -1,9 +1,13 @@
-import { Editor } from "@monaco-editor/react";
+import { Editor, loader } from "@monaco-editor/react";
 import { Card } from "./ui/card";
 import { Upload, FileText, Download } from "lucide-react";
 import { Button } from "./ui/button";
 import { useRef, useEffect } from "react";
 import { toast } from "sonner";
+import * as monaco from "monaco-editor";
+
+// Configure Monaco to use local files instead of CDN for CSP compliance
+loader.config({ monaco });
 
 interface JsonEditorProps {
   value: string;
@@ -29,14 +33,51 @@ export const JsonEditor = ({ value, onChange, onFileUpload, onEditorReady }: Jso
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const content = event.target?.result as string;
-        onFileUpload(content);
-      };
-      reader.readAsText(file);
+    if (!file) return;
+
+    // Security: Validate file size (10MB limit)
+    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB in bytes
+    if (file.size > MAX_FILE_SIZE) {
+      toast.error(`File too large. Maximum size is ${MAX_FILE_SIZE / 1024 / 1024}MB`);
+      e.target.value = ''; // Clear the input
+      return;
     }
+
+    // Security: Validate file extension
+    const fileName = file.name.toLowerCase();
+    if (!fileName.endsWith('.json')) {
+      toast.error('Invalid file type. Please upload a .json file');
+      e.target.value = ''; // Clear the input
+      return;
+    }
+
+    // Security: Validate MIME type (if available)
+    if (file.type && file.type !== 'application/json' && file.type !== 'text/plain') {
+      toast.warning('Unexpected file type. Proceeding with caution...');
+    }
+
+    const reader = new FileReader();
+
+    reader.onerror = () => {
+      toast.error('Failed to read file');
+      e.target.value = ''; // Clear the input
+    };
+
+    reader.onload = (event) => {
+      const content = event.target?.result as string;
+
+      // Additional validation: check content size after reading
+      if (content.length > MAX_FILE_SIZE) {
+        toast.error('File content too large');
+        e.target.value = ''; // Clear the input
+        return;
+      }
+
+      onFileUpload(content);
+      e.target.value = ''; // Clear the input for security
+    };
+
+    reader.readAsText(file);
   };
 
   const handleDownload = () => {
@@ -109,6 +150,7 @@ export const JsonEditor = ({ value, onChange, onFileUpload, onEditorReady }: Jso
           onChange={(value) => onChange(value || "")}
           onMount={handleEditorDidMount}
           theme="vs-dark"
+          loading={<div className="flex items-center justify-center h-full text-muted-foreground">Loading editor...</div>}
           options={{
             minimap: { enabled: false },
             fontSize: 14,

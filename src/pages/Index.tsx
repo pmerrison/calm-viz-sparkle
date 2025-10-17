@@ -9,6 +9,7 @@ import { MetadataPanel } from "@/components/MetadataPanel";
 import { GitHubConnectDialog } from "@/components/GitHubConnectDialog";
 import { GitHubFileBrowser } from "@/components/GitHubFileBrowser";
 import { GitHubService, GitHubTokenStorage, type GitHubFile } from "@/services/github";
+import { safeFetch } from "@/utils/urlValidation";
 import { toast } from "sonner";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
@@ -205,8 +206,12 @@ const Index = () => {
         parsedData,
       };
 
-      // Fetch the CALM file from the URL
-      const response = await fetch(url);
+      // Security: Use safe fetch with URL validation and timeout
+      const response = await safeFetch(url, {
+        timeout: 30000, // 30 second timeout
+        method: 'GET',
+      });
+
       if (!response.ok) {
         throw new Error(`Failed to fetch: ${response.statusText}`);
       }
@@ -248,10 +253,10 @@ const Index = () => {
     try {
       // Save token if provided
       if (token) {
-        GitHubTokenStorage.save(token);
+        await GitHubTokenStorage.save(token);
       } else {
         // Try to load saved token
-        const savedToken = GitHubTokenStorage.load();
+        const savedToken = await GitHubTokenStorage.load();
         token = savedToken || undefined;
       }
 
